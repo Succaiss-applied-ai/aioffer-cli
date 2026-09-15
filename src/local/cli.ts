@@ -3,7 +3,9 @@ import { resolve, dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import { open, unlink, mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import { acquireRuntimeLock } from "./runtime-lock.js";
 import { createLocalApp, localOrigin } from "./server.js";
 import { loadCatalog, searchCatalog } from "./catalog.js";
 
@@ -38,31 +40,36 @@ if (["--help", "-h", "help"].includes(command)) {
 } else if (command === "start") {
   process.umask(0o077);
   await mkdir(dataDir, { recursive: true, mode: 0o700 });
-  const lock = join(dataDir, "runtime.lock");
+  // 先独占本机端口，避免两个进程同时恢复旧锁或在端口冲突时改写数据。
+  const server = createServer((_req, res) => {
+    res.writeHead(503).end("本地服务正在启动，请稍后刷新");
+  });
   try {
-    const file = await open(lock, "wx", 0o600);
-    await file.writeFile(String(process.pid));
-    await file.close();
-  } catch {
-    throw Error(
-      `数据目录已被占用。若上次异常退出，请确认旧进程已结束，再移除 ${lock}`,
-    );
-  }
-  let local: Awaited<ReturnType<typeof createLocalApp>>;
-  try {
-    local = await createLocalApp({ root, dataDir });
-  } catch (e) {
-    await unlink(lock);
-    throw e;
-  }
-  const server = local.app.listen(19876, "127.0.0.1");
-  server.on("error", async () => {
-    await local.close();
-    await unlink(lock);
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(19876, "127.0.0.1", () => {
+        server.removeListener("error", reject);
+        resolve();
+      });
+    });
+  } catch (error) {
     console.error("无法监听本机 19876 端口，请检查是否已启动。");
     process.exitCode = 1;
-  });
-  server.on("listening", () => {
+    throw error;
+  }
+  let release: (() => Promise<void>) | undefined;
+  let local: Awaited<ReturnType<typeof createLocalApp>>;
+  try {
+    release = await acquireRuntimeLock(join(dataDir, "runtime.lock"));
+    local = await createLocalApp({ root, dataDir });
+  } catch (e) {
+    await release?.();
+    server.close();
+    throw e;
+  }
+  server.removeAllListeners("request");
+  server.on("request", local.app);
+  {
     const url = `${localOrigin}/#token=${local.apiToken}`;
     console.log(
       `aioffer-cli 已启动，仅监听本机。\n访问链接（含本机访问凭据，请勿分享）：\n${url}\n插件目录：${join(root, "extension/dist")}\n按 Ctrl+C 停止。`,
@@ -82,14 +89,15 @@ if (["--help", "-h", "help"].includes(command)) {
       child.on("error", () => console.log("请手动打开上面的访问链接。"));
       child.unref();
     }
-  });
+  }
   let stopping = false;
   const stop = async () => {
     if (stopping) return;
     stopping = true;
     await local.close();
+    // 持有端口直到数据和锁清理完成，避免旧实例误删新实例的锁。
+    await release?.();
     server.close();
-    await unlink(lock);
   };
   process.on("SIGINT", () => {
     void stop();
