@@ -36,7 +36,7 @@ async function api(path, body) {
     );
   return data;
 }
-function bind(id, handler, event = "click") {
+function bind(id, handler, event = "click", isDisabled = () => false) {
   $(id).addEventListener(event, async (e) => {
     e.preventDefault();
     const button = e.submitter || $(id);
@@ -46,7 +46,7 @@ function bind(id, handler, event = "click") {
     } catch (error) {
       notice(error.message, true);
     } finally {
-      button.disabled = false;
+      button.disabled = isDisabled();
     }
   });
 }
@@ -266,10 +266,41 @@ function selection() {
   $("previewArea").hidden = true;
   $("selectionCount").textContent = `已选 ${selected.size} 个`;
 }
-async function search() {
-  const result = await api(
-    `/api/jobs?q=${encodeURIComponent($("query").value)}&city=${encodeURIComponent($("city").value)}&offset=${offset}`,
-  );
+let searchRequest = 0;
+let searchPending = false;
+let displayedQuery = "", displayedCity = "";
+const previousDisabled = () => searchPending || offset === 0;
+const nextDisabled = () => searchPending || offset + 30 >= total;
+function updatePagination() {
+  $("previous").disabled = previousDisabled();
+  $("next").disabled = nextDisabled();
+}
+async function search(requestedOffset = offset) {
+  const request = ++searchRequest;
+  const query = $("query").value, city = $("city").value;
+  if (query !== displayedQuery || city !== displayedCity) requestedOffset = 0;
+  searchPending = true;
+  updatePagination();
+  try {
+    const result = await api(
+      `/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}`,
+    );
+    // 仅最新成功响应可以替换列表和页码；失败不消耗当前页。
+    if (request !== searchRequest) return;
+    offset = requestedOffset;
+    displayedQuery = query;
+    displayedCity = city;
+    renderJobs(result);
+  } catch (error) {
+    if (request === searchRequest) throw error;
+  } finally {
+    if (request === searchRequest) {
+      searchPending = false;
+      updatePagination();
+    }
+  }
+}
+function renderJobs(result) {
   total = result.total;
   $("jobCount").textContent =
     `找到 ${total} 个 · 当前 ${total ? offset + 1 : 0}–${Math.min(offset + 30, total)}`;
@@ -303,25 +334,16 @@ async function search() {
     div.append(detail);
     $("jobs").append(div);
   }
-  $("previous").disabled = offset === 0;
-  $("next").disabled = offset + 30 >= total;
 }
 bind(
   "search",
   async () => {
-    offset = 0;
-    await search();
+    await search(0);
   },
   "submit",
 );
-bind("previous", async () => {
-  offset = Math.max(0, offset - 30);
-  await search();
-});
-bind("next", async () => {
-  if (offset + 30 < total) offset += 30;
-  await search();
-});
+bind("previous", () => search(Math.max(0, offset - 30)), "click", previousDisabled);
+bind("next", () => search(offset + 30 < total ? offset + 30 : offset), "click", nextDisabled);
 bind("clearSelection", async () => {
   selected.clear();
   selection();
