@@ -91,7 +91,11 @@ describe("本地服务安全边界", () => {
       deviceId: "synthetic-device",
       pluginInstalled: true,
       pluginVersion: "1.0.12",
-      capabilities: ["batch_auto_apply.v1", "account_logout_fence.v1"],
+      capabilities: [
+        "batch_auto_apply.v1",
+        "account_logout_fence.v1",
+        "aioffer.local-runtime.v1",
+      ],
     });
     const version = makeVersion(
       {
@@ -120,6 +124,21 @@ describe("本地服务安全边界", () => {
       confirmedByUser: true,
       allowAutomaticFinalSubmit: true,
     };
+    await local.sidecar.devices.register({
+      tenantId: "local",
+      userId: "local-user",
+      deviceId: "legacy-cloud-device",
+      pluginInstalled: true,
+      pluginVersion: "1.0.12",
+      capabilities: ["batch_auto_apply.v1", "account_logout_fence.v1"],
+    });
+    const legacy = await request("/api/attempts", {
+      ...body,
+      deviceId: "legacy-cloud-device",
+      idempotencyKey: randomUUID(),
+    });
+    expect(legacy.status).toBe(409);
+    expect(await legacy.text()).toContain("不是 aioffer-cli 本地插件");
     expect(
       (await request("/api/attempts", { ...body, confirmedByUser: false }))
         .status,

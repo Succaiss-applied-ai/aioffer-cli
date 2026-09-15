@@ -94,7 +94,7 @@ describe("AI Offer page bridge", () => {
       type: "RECRUITING_AI_BRIDGE_RESULT",
       requestId: "plugin-info-local",
       ok: true,
-      response: { version: "0.15.34" },
+      response: { version: "0.15.34", runtime: "aioffer-cli" },
       error: null,
       extensionId: "abcdefghijklmnopabcdefghijklmnop"
     });

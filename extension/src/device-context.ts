@@ -1,4 +1,5 @@
 export const autoApplyDeviceCapabilities = [
+  "aioffer.local-runtime.v1",
   "batch_auto_apply.v1",
   "candidate_information_merge.v1",
   "candidate_profile_fetch.v1",
