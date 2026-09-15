@@ -168,6 +168,55 @@ describe("本地服务安全边界", () => {
     const attempts = await (await request("/api/attempts")).json();
     expect(attempts).toHaveLength(1);
     expect(attempts[0].batch).toBeTruthy();
+    const retry = { ...body, idempotencyKey: randomUUID(), retryOf: created.id };
+    expect((await request("/api/attempts", retry)).status).toBe(409);
+    const identity = { tenantId: "local", userId: "local-user", deviceId: "synthetic-device" };
+    async function loginFailure() {
+      const claimed = (await local.sidecar.queue.claim(identity))!;
+      expect(claimed).toBeTruthy();
+      const payload = claimed.command.payload as any;
+      const event = {
+        schemaVersion: "ai-plugin-event.v1" as const,
+        commandId: claimed.commandId,
+        type: "browser.batch_auto_apply_job_completed",
+        status: "completed" as const,
+        occurredAt: new Date().toISOString(),
+        payload: { autoApplyResult: {
+          schemaVersion: "auto-apply-job-result.v1", batchId: payload.batchId,
+          batchJobId: payload.batchJobId, jobId: "test-job", status: "failed",
+          reasonCode: "login_required", occurredAt: new Date().toISOString(),
+          evidence: { redacted: true, pageUrl: "https://example.com/login" },
+        } },
+      };
+      return { claimed, payload, event };
+    }
+    const firstFailure = await loginFailure();
+    await local.sidecar.autoApply.completeCommandResult(firstFailure.claimed.commandId, identity.deviceId, firstFailure.event);
+    const recoverable = await (await request("/api/attempts")).json();
+    expect(recoverable[0].retryableLoginJobIds).toEqual(["test-job"]);
+    for (const change of [{ confirmedByUser: false }, { mode: "assisted" },
+      { versionId: randomUUID() }, { deviceId: "another-device" }, { allowConsentClick: true }])
+      expect((await request("/api/attempts", { ...retry, ...change })).status).not.toBe(201);
+    const retried = await request("/api/attempts", retry);
+    expect(retried.status).toBe(201);
+    const next = await retried.json();
+    expect(next.batchId).not.toBe(created.batchId);
+    expect((await (await request("/api/attempts", retry)).json()).id).toBe(next.id);
+    expect((await request("/api/attempts", { ...retry, idempotencyKey: randomUUID() })).status).toBe(409);
+    const updated = await (await request("/api/attempts")).json();
+    expect(updated).toHaveLength(2);
+    expect(updated[0].batch.jobs[0].status).toBe("failed");
+    expect(updated[0].retryableLoginJobIds).toEqual([]);
+    const secondFailure = await loginFailure();
+    const verified = await local.sidecar.autoApply.verifySubmissionAuthorization(secondFailure.payload.batchAuthorization, {
+      ...identity, batchId: next.batchId, batchJobId: secondFailure.payload.batchJobId,
+      commandId: secondFailure.claimed.commandId,
+    });
+    expect(verified.valid).toBe(true);
+    const authorized = await local.sidecar.autoApply.get(next.batchId, identity);
+    expect(authorized.jobs[0]!.localSubmitAuthorizedAt).toEqual(expect.any(String));
+    await local.sidecar.autoApply.completeCommandResult(secondFailure.claimed.commandId, identity.deviceId, secondFailure.event);
+    expect((await request("/api/attempts", { ...retry, retryOf: next.id, idempotencyKey: randomUUID() })).status).toBe(409);
   });
   it("离线搜索且拒绝跨站、错误 Host 和无凭据请求", async () => {
     const { request } = await fixture();
