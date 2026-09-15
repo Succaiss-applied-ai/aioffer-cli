@@ -13,6 +13,13 @@ let offset = 0,
   preview = null,
   configuration;
 let extraAssetIds = [];
+let previewRevision = 0;
+function invalidatePreview() {
+  previewRevision++;
+  preview = null;
+  $("previewArea").hidden = true;
+  $("submitConsent").checked = false;
+}
 const instance =
   sessionStorage.getItem("aioffer-instance") || crypto.randomUUID();
 sessionStorage.setItem("aioffer-instance", instance);
@@ -191,8 +198,7 @@ function showVersion() {
   $("attachments").replaceChildren();
   const v = versions.find((x) => x.id === $("version").value);
   $("profile").value = v ? JSON.stringify(v.profile, null, 2) : "";
-  preview = null;
-  $("previewArea").hidden = true;
+  invalidatePreview();
 }
 async function resumes(id) {
   versions = await api("/api/resumes");
@@ -262,8 +268,7 @@ bind("confirmProfile", async () => {
   notice("已保存新的确认版本。");
 });
 function selection() {
-  preview = null;
-  $("previewArea").hidden = true;
+  invalidatePreview();
   $("selectionCount").textContent = `已选 ${selected.size} 个`;
 }
 let searchRequest = 0;
@@ -350,6 +355,8 @@ bind("clearSelection", async () => {
   await search();
 });
 bind("preview", async () => {
+  invalidatePreview();
+  const revision = previewRevision;
   const body = {
     versionId: $("version").value,
     deviceId: $("device").value,
@@ -362,6 +369,8 @@ bind("preview", async () => {
   if (body.mode === "assisted" && body.jobIds.length !== 1)
     throw Error("半自动模式每次选择一个岗位");
   const result = await api("/api/preview", body);
+  // 用户修改选择后，旧请求不得恢复已失效的确认入口。
+  if (revision !== previewRevision) return;
   preview = {
     ...body,
     idempotencyKey: crypto.randomUUID(),
@@ -383,20 +392,17 @@ bind("preview", async () => {
   $("previewArea").hidden = false;
 });
 for (const id of ["mode", "consentClick", "device"])
-  $(id).addEventListener("change", () => {
-    preview = null;
-    $("previewArea").hidden = true;
-  });
+  $(id).addEventListener("change", invalidatePreview);
 bind("start", async () => {
   if (!preview || !$("submitConsent").checked)
     throw Error("请先核对并勾选本次投递确认");
-  const result = await api("/api/attempts", preview);
+  const submittedPreview = preview;
+  const result = await api("/api/attempts", submittedPreview);
   await bridge("RECRUITING_AUTO_APPLY_WAKE", {
-    deviceId: preview.deviceId,
+    deviceId: submittedPreview.deviceId,
     batchId: result.batchId,
   }).catch((e) => notice(`任务已保存；${e.message}。不要重复创建。`, true));
-  preview = null;
-  $("previewArea").hidden = true;
+  if (preview === submittedPreview) invalidatePreview();
   await refreshAttempts();
 });
 const labels = {
