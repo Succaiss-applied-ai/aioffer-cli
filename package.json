@@ -1,0 +1,53 @@
+{
+  "name": "aioffer-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "面向中国用户的本地投递助手，使用用户自己的 MinerU 和视觉模型密钥",
+  "license": "MIT",
+  "bin": {
+    "aioffer": "dist/local/cli.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist",
+    "extension/dist",
+    "web",
+    "data",
+    "README.md",
+    "docs",
+    "CONTRIBUTING.md"
+  ],
+  "scripts": {
+    "dev": "tsx src/local/cli.ts start",
+    "start": "node dist/local/cli.js start",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:local": "vitest run src/local",
+    "check:cloud": "node scripts/check-cloud-free.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "express": "5.2.1",
+    "parse5": "8.0.1",
+    "pdfjs-dist": "5.6.205",
+    "pg": "8.16.3",
+    "sharp": "0.35.4",
+    "zod": "4.4.3",
+    "fflate": "0.8.2"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.2.2",
+    "@types/express": "5.0.6",
+    "@types/node": "24.13.3",
+    "@types/pg": "8.15.5",
+    "esbuild": "0.28.1",
+    "jsdom": "30.0.1",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

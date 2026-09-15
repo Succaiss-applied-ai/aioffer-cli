@@ -1,0 +1,213 @@
+{
+  "afterRemoval": {
+    "package": {
+      "candidate": {
+        "basic": {
+          "email": "synthetic@example.test",
+          "fullName": "Synthetic Candidate",
+          "gender": "男"
+        },
+        "preferences": {
+          "preferredCities": [
+            "上海市"
+          ]
+        }
+      },
+      "metadata": {
+        "projectionVersion": "11",
+        "source": "aioffer",
+        "sourceSchemaVersion": "resume-material-reader.v0"
+      },
+      "packageId": "resume-fixture",
+      "schemaVersion": "zcandidate.resume_package.v1",
+      "title": "AI Offer 简历信息包"
+    },
+    "profile": {
+      "overrides": [
+        {
+          "semanticKey": "candidate.gender",
+          "value": "男"
+        },
+        {
+          "semanticKey": "candidate.preferences.preferredCities",
+          "value": "上海市",
+          "values": [
+            "上海市"
+          ],
+          "removedValues": [
+            "深圳市"
+          ]
+        }
+      ],
+      "schemaVersion": "candidate-application-profile.v1",
+      "revision": "e0304cbc63e202a7c8d090e7c55944c3e7282222d9cc5e421851716e299a3aa9",
+      "facts": [
+        {
+          "schemaVersion": "candidate-application-profile-fact.v1",
+          "fieldBinding": {
+            "jobId": "job-001",
+            "stableFieldKey": "intention.preferred_city.combobox",
+            "sectionKey": "intention",
+            "groupIndex": null
+          },
+          "stableFieldKeys": [
+            "intention.preferred_city.combobox"
+          ],
+          "label": "意向工作城市",
+          "normalizedLabel": "意向工作城市",
+          "controlType": "combobox",
+          "observedSites": [],
+          "value": "上海市",
+          "source": "user_confirmed",
+          "confirmedAt": "2026-09-09T12:00:00Z",
+          "updatedAt": "2026-09-09T12:00:00Z"
+        },
+        {
+          "fieldAliases": [
+            "性别",
+            "gender",
+            "sex",
+            "性别/Gender",
+            "性别（Gender）"
+          ],
+          "schemaVersion": "candidate-application-profile-fact.v1",
+          "semanticKey": "candidate.gender",
+          "stableFieldKeys": [
+            "basic.gender.combobox"
+          ],
+          "label": "性别",
+          "normalizedLabel": "性别",
+          "controlType": "combobox",
+          "observedSites": [],
+          "value": "男",
+          "source": "user_confirmed",
+          "confirmedAt": "2026-09-09T12:00:00Z",
+          "updatedAt": "2026-09-09T12:00:00Z"
+        },
+        {
+          "schemaVersion": "candidate-application-profile-fact.v1",
+          "semanticKey": "candidate.acceptable_work_city:上海",
+          "stableFieldKeys": [],
+          "label": "意向工作城市",
+          "normalizedLabel": "意向工作城市",
+          "observedSites": [],
+          "value": "上海市",
+          "source": "user_confirmed",
+          "confirmedAt": "2026-09-09T12:00:00Z",
+          "updatedAt": "2026-09-09T12:00:00Z"
+        }
+      ]
+    }
+  },
+  "package": {
+    "candidate": {
+      "basic": {
+        "email": "synthetic@example.test",
+        "fullName": "Synthetic Candidate",
+        "gender": "男"
+      },
+      "preferences": {
+        "preferredCities": [
+          "深圳市",
+          "上海市"
+        ]
+      }
+    },
+    "metadata": {
+      "projectionVersion": "11",
+      "source": "aioffer",
+      "sourceSchemaVersion": "resume-material-reader.v0"
+    },
+    "packageId": "resume-fixture",
+    "schemaVersion": "zcandidate.resume_package.v1",
+    "title": "AI Offer 简历信息包"
+  },
+  "profile": {
+    "overrides": [
+      {
+        "semanticKey": "candidate.gender",
+        "value": "男"
+      },
+      {
+        "semanticKey": "candidate.preferences.preferredCities",
+        "value": "深圳市",
+        "values": [
+          "深圳市",
+          "上海市"
+        ]
+      }
+    ],
+    "schemaVersion": "candidate-application-profile.v1",
+    "revision": "12f05ad58433241f5487d897e2e3cab37bb8bd335d9b82b0746680edbd806d63",
+    "facts": [
+      {
+        "schemaVersion": "candidate-application-profile-fact.v1",
+        "fieldBinding": {
+          "jobId": "job-001",
+          "stableFieldKey": "intention.preferred_city.combobox",
+          "sectionKey": "intention",
+          "groupIndex": null
+        },
+        "stableFieldKeys": [
+          "intention.preferred_city.combobox"
+        ],
+        "label": "意向工作城市",
+        "normalizedLabel": "意向工作城市",
+        "controlType": "combobox",
+        "observedSites": [],
+        "value": "上海市",
+        "source": "user_confirmed",
+        "confirmedAt": "2026-09-09T12:00:00Z",
+        "updatedAt": "2026-09-09T12:00:00Z"
+      },
+      {
+        "fieldAliases": [
+          "性别",
+          "gender",
+          "sex",
+          "性别/Gender",
+          "性别（Gender）"
+        ],
+        "schemaVersion": "candidate-application-profile-fact.v1",
+        "semanticKey": "candidate.gender",
+        "stableFieldKeys": [
+          "basic.gender.combobox"
+        ],
+        "label": "性别",
+        "normalizedLabel": "性别",
+        "controlType": "combobox",
+        "observedSites": [],
+        "value": "男",
+        "source": "user_confirmed",
+        "confirmedAt": "2026-09-09T12:00:00Z",
+        "updatedAt": "2026-09-09T12:00:00Z"
+      },
+      {
+        "schemaVersion": "candidate-application-profile-fact.v1",
+        "semanticKey": "candidate.acceptable_work_city:深圳",
+        "stableFieldKeys": [],
+        "label": "可接受工作城市",
+        "normalizedLabel": "可接受工作城市",
+        "controlType": "select",
+        "observedSites": [],
+        "value": "深圳市",
+        "source": "user_confirmed",
+        "confirmedAt": "2026-09-09T12:00:00Z",
+        "updatedAt": "2026-09-09T12:00:00Z"
+      },
+      {
+        "schemaVersion": "candidate-application-profile-fact.v1",
+        "semanticKey": "candidate.acceptable_work_city:上海",
+        "stableFieldKeys": [],
+        "label": "可接受工作城市",
+        "normalizedLabel": "可接受工作城市",
+        "controlType": "select",
+        "observedSites": [],
+        "value": "上海市",
+        "source": "user_confirmed",
+        "confirmedAt": "2026-09-09T12:00:00Z",
+        "updatedAt": "2026-09-09T12:00:00Z"
+      }
+    ]
+  }
+}
