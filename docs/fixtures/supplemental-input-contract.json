@@ -1,0 +1,216 @@
+[
+  {
+    "case": "text",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "text",
+      "inputKind": "text"
+    },
+    "code": null
+  },
+  {
+    "case": "same label month",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "month",
+      "inputKind": "month"
+    },
+    "code": null
+  },
+  {
+    "case": "search query",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "search",
+      "inputKind": "search",
+      "options": []
+    },
+    "code": null
+  },
+  {
+    "case": "legacy options",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "options": [
+        "A",
+        "B"
+      ]
+    },
+    "code": null
+  },
+  {
+    "case": "legacy native",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "text",
+      "controlKind": "native"
+    },
+    "code": null
+  },
+  {
+    "case": "multi",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "multi_select",
+      "inputKind": "multi_select",
+      "options": [
+        "A",
+        "B"
+      ]
+    },
+    "code": null
+  },
+  {
+    "case": "feishu location",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "search",
+      "inputKind": "search",
+      "controlType": "feishu_location_tree.v1"
+    },
+    "code": null
+  },
+  {
+    "case": "region city",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "text",
+      "inputKind": "region",
+      "regionLevel": "city"
+    },
+    "code": null
+  },
+  {
+    "case": "unknown",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "custom-widget"
+    },
+    "code": "supplemental_control_unresolved"
+  },
+  {
+    "case": "empty select",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "select",
+      "inputKind": "select"
+    },
+    "code": "supplemental_options_unavailable"
+  },
+  {
+    "case": "empty legacy combo",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "combobox",
+      "controlKind": "combobox"
+    },
+    "code": "supplemental_options_unavailable"
+  },
+  {
+    "case": "duplicates",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "select",
+      "inputKind": "select",
+      "options": [
+        "A",
+        "A"
+      ]
+    },
+    "code": "supplemental_input_contract_invalid"
+  },
+  {
+    "case": "blank option",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "select",
+      "inputKind": "select",
+      "options": [
+        "A",
+        " "
+      ]
+    },
+    "code": "supplemental_input_contract_invalid"
+  },
+  {
+    "case": "conflicting search",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "search",
+      "inputKind": "search",
+      "options": [
+        "A"
+      ]
+    },
+    "code": "supplemental_input_contract_invalid"
+  },
+  {
+    "case": "incomplete region",
+    "request": {
+      "fieldId": "field-2",
+      "stableFieldKey": "education[1].school",
+      "sectionKey": "education",
+      "groupIndex": 1,
+      "label": "学校",
+      "type": "text",
+      "inputKind": "region"
+    },
+    "code": "supplemental_input_contract_invalid"
+  }
+]

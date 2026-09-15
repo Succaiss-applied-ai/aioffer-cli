@@ -1,0 +1,143 @@
+{
+  "acceptedControls": [
+    {
+      "at": "2026-09-03T09:00:33.780Z",
+      "site": "微观博易",
+      "urlFamily": "https://app.mokahr.com/campus-recruitment/bjwgby/118127#/job/<job>/apply",
+      "field": "申请信息 · 意向工作城市",
+      "stableFieldKeyBeforeAndAfter": "intention.preferred_city.combobox",
+      "type": "combobox",
+      "inputType": "text",
+      "readOnly": false,
+      "signature": [
+        "sd-Input-input",
+        "sd-Select-container",
+        "sd-Dropdown-container"
+      ],
+      "popup": "One control-owned Dropdown; Menu-header groups excluded, Menu-content-item/option-label city leaves only",
+      "route": "moka.work-city.trusted-focus.v1",
+      "routingScope": "shared_component",
+      "requestedFact": "北京市",
+      "options": [
+        "北京市 / Beijing",
+        "上海市 / Shanghai"
+      ],
+      "validationAfterDiscovery": "必填项未填写 / Required items are not filled in",
+      "executionExpected": "北京市 / Beijing",
+      "immediate": "北京市 / Beijing",
+      "delayed": "北京市 / Beijing",
+      "validationAfter": null,
+      "popupClosed": true,
+      "driverValidationCleared": true,
+      "registeredReadbackMatches": true,
+      "plannerReadbackMatches": true,
+      "otherFieldsUnchanged": true,
+      "fillLedger": {
+        "openClickCount": 1,
+        "leafClickCount": 1,
+        "commitClickCount": 1,
+        "retryCount": 0,
+        "reloadCount": 0,
+        "fullFormRestartCount": 0
+      },
+      "activeTabBefore": 1750964094,
+      "activeTabAfter": 1750964094,
+      "targetActiveAfter": false,
+      "activationEvents": [],
+      "navigationEvents": [],
+      "urlUnchanged": true
+    },
+    {
+      "at": "2026-09-03T09:01:13.060Z",
+      "site": "微观博易",
+      "urlFamily": "https://app.mokahr.com/campus-recruitment/bjwgby/118127#/job/<job>/apply",
+      "field": "性别",
+      "stableFieldKeyBeforeAndAfter": "basic.gender.combobox",
+      "type": "combobox",
+      "inputType": "text",
+      "readOnly": false,
+      "signature": [
+        "sd-Input-input",
+        "sd-Select-container",
+        "sd-Dropdown-container"
+      ],
+      "popup": "One control-owned flat Menu; no group headers; real Menu-content-item/option-label leaves",
+      "route": "moka.flat-select.trusted-focus.v1",
+      "routingScope": "shared_component",
+      "requestedFact": "男 / Male",
+      "factProvenance": "synthetic exact current-job field confirmation",
+      "options": [
+        "男/Male",
+        "女/Female"
+      ],
+      "validationAfterDiscovery": "必填项未填写 / Required items are not filled in",
+      "executionExpected": "男/Male",
+      "immediate": "男/Male",
+      "delayed": "男/Male",
+      "validationAfter": null,
+      "popupClosed": true,
+      "registeredReadbackMatches": true,
+      "plannerReadbackMatches": true,
+      "otherFieldsUnchanged": true,
+      "fillLedger": {
+        "openClickCount": 1,
+        "leafClickCount": 1,
+        "commitClickCount": 1,
+        "retryCount": 0,
+        "reloadCount": 0,
+        "fullFormRestartCount": 0
+      },
+      "activeTabBefore": 1750964094,
+      "activeTabAfter": 1750964094,
+      "targetActiveAfter": false,
+      "activationEvents": [],
+      "navigationEvents": []
+    },
+    {
+      "at": "2026-09-03T09:01:57.786Z",
+      "site": "DeepSeek",
+      "urlFamily": "https://app.mokahr.com/social-recruitment/high-flyer/140576#/job/<job>/apply",
+      "field": "申请信息 · 意向工作城市",
+      "stableFieldKeyBeforeAndAfter": "intention.preferred_city.combobox",
+      "type": "combobox",
+      "inputType": "text",
+      "readOnly": false,
+      "signature": [
+        "sd-Input-input",
+        "sd-Select-container",
+        "sd-Dropdown-container"
+      ],
+      "popup": "One control-owned Dropdown; city leaves, not province headers",
+      "route": "moka.deepseek.location.trusted-focus.v4",
+      "routingScope": "company_control",
+      "requestedFact": "北京",
+      "options": [
+        "杭州市",
+        "北京市"
+      ],
+      "validationAfterDiscovery": "必填项未填写",
+      "executionExpected": "北京市",
+      "immediate": "北京市",
+      "delayed": "北京市",
+      "validationAfter": null,
+      "popupClosed": true,
+      "driverValidationCleared": true,
+      "registeredReadbackMatches": true,
+      "plannerReadbackMatches": true,
+      "otherFieldsUnchanged": true,
+      "fillLedger": {
+        "openClickCount": 1,
+        "leafClickCount": 1,
+        "commitClickCount": 1,
+        "retryCount": 0,
+        "reloadCount": 0,
+        "fullFormRestartCount": 0
+      },
+      "activeTabBefore": 1750964094,
+      "activeTabAfter": 1750964094,
+      "targetActiveAfter": false,
+      "activationEvents": [],
+      "navigationEvents": []
+    }
+  ]
+}

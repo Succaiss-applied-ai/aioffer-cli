@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "aioffer-cli 本地投递助手",
+  "version": "1.0.12",
+  "description": "连接本机 aioffer-cli，使用用户自己的模型，复用 AI Offer 的投递执行器。",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "webNavigation",
+    "activeTab",
+    "scripting",
+    "offscreen",
+    "alarms",
+    "debugger"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "aioffer-cli 本地投递助手"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1/*",
+        "http://localhost/*"
+      ],
+      "js": [
+        "bridge-content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://127.0.0.1/*",
+      "http://localhost/*"
+    ]
+  }
+}
