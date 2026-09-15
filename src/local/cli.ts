@@ -95,9 +95,12 @@ if (["--help", "-h", "help"].includes(command)) {
     if (stopping) return;
     stopping = true;
     await local.close();
-    // 持有端口直到数据和锁清理完成，避免旧实例误删新实例的锁。
+    // 先停止接收并等待在途请求结束，再释放锁。端口关闭期间，新实例
+    // 仍会因旧进程持锁而拒绝启动，避免新旧请求同时写入同一数据目录。
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
     await release?.();
-    server.close();
   };
   process.on("SIGINT", () => {
     void stop();

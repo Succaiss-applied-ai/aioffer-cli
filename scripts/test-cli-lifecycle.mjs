@@ -5,6 +5,7 @@ import { once } from "node:events";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { request } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 
 const dir = await mkdtemp(join(tmpdir(), "aioffer-cli-lifecycle-"));
@@ -45,8 +46,27 @@ try {
   assert.equal(await readFile(join(dir, "runtime.lock"), "utf8"), String(recovered.child.pid));
   assert.equal(await readFile(join(dir, "secrets.json"), "utf8"), configBefore);
   console.log("异常退出后的旧锁自动恢复，配置保留：通过");
+  // 未发完的本地请求跨越 SIGTERM，验证锁保留到旧请求真正结束。
+  const pending = request("http://127.0.0.1:19876/api/config", {
+    method: "POST", headers: {"content-type":"application/json", "content-length":"2",
+      authorization:`Bearer ${JSON.parse(configBefore).apiToken}`},
+  });
+  const response = once(pending, "response");
+  pending.on("error", () => {});
+  pending.write("{");
+  await fetch("http://127.0.0.1:19876/health").then(r => r.json());
   recovered.child.kill("SIGTERM");
+  await delay(100);
+  assert.equal(await readFile(join(dir, "runtime.lock"), "utf8"), String(recovered.child.pid));
+  const whileDraining = launch();
+  assert.notEqual((await whileDraining.done)[0], 0);
+  assert.equal(await readFile(join(dir, "secrets.json"), "utf8"), configBefore);
+  pending.end("}");
+  const [message] = await response;
+  message.resume();
+  await once(message, "end");
   await recovered.done;
+  console.log("在途请求结束前保留锁并拒绝新实例：通过");
   await assert.rejects(readFile(join(dir, "runtime.lock")), { code: "ENOENT" });
   console.log("正常退出清理锁：通过");
 } finally {
