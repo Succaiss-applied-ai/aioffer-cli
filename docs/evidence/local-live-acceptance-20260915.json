@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "local-live-acceptance.v1",
+  "date": "2026-09-15",
+  "data": "合成中文简历和随机测试图片，不含真实求职者资料",
+  "provider": {
+    "name": "通义千问",
+    "model": "qwen3-vl-plus",
+    "realApiCall": true
+  },
+  "passed": [
+    "随机色块视觉识别",
+    "合成资料事实提取及未知电话不补造",
+    "MinerU PDF 上传、轮询、结果下载",
+    "本地 PDF 导入到结构化资料",
+    "确认另存新版本且原草稿不变",
+    "签名附件字节与上传原件一致",
+    "无签名附件访问拒绝",
+    "未授权解析不产生外部请求",
+    "状态接口不回显密钥",
+    "未认证及跨站 API 请求拒绝",
+    "Chrome 中文页面显示已解析和已确认资料"
+  ],
+  "observedHttpHosts": [
+    "dashscope.aliyuncs.com",
+    "mineru.net",
+    "mineru.oss-cn-shanghai.aliyuncs.com",
+    "cdn-mineru.openxlab.org.cn"
+  ],
+  "objectStorageRequestsCarryProviderKey": false,
+  "networkScope": "本地服务模型测试与 PDF 导入路径，不包含新插件实站投递",
+  "notVerified": [
+    "新插件加载与配对",
+    "招聘网站填写、人工交接和最终回执",
+    "其他模型厂商真实调用",
+    "所有运行路径的网络边界"
+  ],
+  "realApplicationsSubmitted": 0,
+  "readyForStableRelease": false
+}

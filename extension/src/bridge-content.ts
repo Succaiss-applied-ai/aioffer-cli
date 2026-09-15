@@ -147,7 +147,7 @@ function handleBridgeMessage(event: MessageEvent<BridgeRequest>): void {
         type: "RECRUITING_AI_BRIDGE_RESULT",
         requestId,
         ok: true,
-        response: { version: chrome.runtime.getManifest().version },
+        response: { version: chrome.runtime.getManifest().version, runtime: "aioffer-cli" },
         error: null
       });
     } catch (error) {

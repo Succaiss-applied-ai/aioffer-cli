@@ -1,3 +1,4 @@
+import { assertLocalPlugin } from "./plugin-compatibility.js";
 const $ = (id) => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
 if (fragment.has("token")) {
@@ -169,15 +170,17 @@ async function devices() {
     ...items.map((d) => {
       const o = element(
         "option",
-        `${d.deviceName || d.deviceId} · ${d.status || "已连接"}`,
+        `${d.deviceName || d.deviceId} · ${d.pluginVersion || "未知版本"} · ${d.capabilities?.includes("aioffer.local-runtime.v1") ? "本地版" : "非本地版，不可使用"}`,
       );
       o.value = d.deviceId;
+      o.disabled = !d.capabilities?.includes("aioffer.local-runtime.v1");
       return o;
     }),
   );
   if (items.some((d) => d.deviceId === old)) $("device").value = old;
 }
 bind("pair", async () => {
+  assertLocalPlugin(await bridge("RECRUITING_AI_PLUGIN_INFO"));
   const bootstrap = await api("/api/bootstrap", {});
   await bridge("RECRUITING_DEVICE_BOOTSTRAP", bootstrap);
   await devices();

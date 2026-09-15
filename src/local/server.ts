@@ -435,6 +435,8 @@ export async function createLocalApp(options: {
         input.deviceId,
       );
       assertAutoApplyPluginVersion(device);
+      if (!device.capabilities.includes("aioffer.local-runtime.v1"))
+        throw Error("此设备不是 aioffer-cli 本地插件，请加载本项目扩展并重新连接");
       const versions = await store.read<ResumeVersion[]>("resumes", []);
       const version = versions.find(
         (x) => x.id === input.versionId && x.confirmedAt,

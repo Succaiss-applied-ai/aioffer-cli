@@ -2,14 +2,14 @@
 
 面向中国用户的本地招聘投递助手。你提供 MinerU Key 和视觉模型 API Key，岗位搜索、资料管理、投递编排和浏览器执行均在自己的电脑运行，不需要 AI Offer 账号或企业云端。
 
-> 当前为开发预览版，尚未完成带真实密钥的模型、MinerU 与完整实站投递验收。不要把单测通过当作所有招聘网站可用。尚未发布 npm 安装包，请从源码运行。
+> 当前为开发预览版。通义千问视觉识别、MinerU PDF 解析及本地资料导入已使用真实密钥和合成资料验证；新插件的完整实站投递尚未验收，其他模型厂商未逐家实测。不要把单测通过当作所有招聘网站可用。尚未发布 npm 安装包，请从源码运行。
 
 ## 快速开始
 
 准备 Node.js 22 或更新版本、pnpm、Git 和 Chrome。无需部署 PostgreSQL、Redis 或对象存储。
 
 ```bash
-git clone --branch feat/local-application-runtime https://github.com/Succaiss-applied-ai/aioffer-cli.git
+git clone https://github.com/Succaiss-applied-ai/aioffer-cli.git
 cd aioffer-cli
 pnpm install --frozen-lockfile
 pnpm build
@@ -20,7 +20,7 @@ pnpm start
 
 1. 填写 MinerU Key，以及一个支持图片输入的模型的厂商、API 地址、模型 ID 和 Key；保存并测试连接。
 2. Chrome 地址栏打开 `chrome://extensions`，开启开发者模式，选择“加载已解压的扩展”，加载项目的 `extension/dist` 目录。
-3. 刷新本地页面，点击“连接本机插件”。扩展需要读取和操作你发起投递的招聘网页，请先阅读权限提示。
+3. 刷新本地页面，点击“连接本机插件”。请停用旧 AI Offer 招聘插件，避免多个插件争抢页面桥接。本地工作台会在发送配对凭据前检查插件身份；旧云端插件不能用作本地执行器。扩展需要读取和操作你发起投递的招聘网页，请先阅读权限提示。
 4. 上传简历，明确同意外部解析；核对提取结果，保存已确认的资料版本。
 5. 搜索和选择岗位，选择半自动或自动模式，核对本次任务后开始。
 
