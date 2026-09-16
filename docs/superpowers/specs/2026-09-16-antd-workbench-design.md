@@ -36,7 +36,7 @@
 - React + TypeScript 负责组件和状态。
 - Ant Design 负责所有交互组件，包括 `Layout`、`Menu`、`Card`、`Form`、`Upload`、`List`、`Tag`、`Progress`、`Alert`、`Empty`、`Result`、`Modal`、`Drawer`、`Pagination`、`Message` 和 `Notification`。
 - Tailwind CSS 只处理少量容器布局、响应式宽度和页面间距；不重复实现 Ant Design 已提供的组件外观。
-- Ant Design `ConfigProvider` 使用中文 locale 和统一主题 token。
+- Ant Design `ConfigProvider` 使用中文 locale，并启用 `zeroRuntime` 固定默认主题。
 - 不使用 React Router。当前页面由 `Menu` 的选中状态切换，浏览器刷新回到工作台首页。
 - 不使用外部状态管理。应用根组件持有共享状态，页面组件持有局部表单和筛选状态。
 
@@ -70,9 +70,10 @@ web/
 
 - 在现有 `scripts/build.mjs` 中增加 Web 构建步骤。
 - 使用现有 esbuild 打包 `web/src/main.tsx` 为浏览器 ESM。
-- 使用 Tailwind CLI 从 `web/src/styles.css` 生成压缩 CSS，并避免引入会覆盖 Ant Design 的全局 preflight。
+- 构建时复制 Ant Design 6 官方 `antd.css`，运行时启用 `zeroRuntime`，保持 style 元素只能来自 `self`；仅用 `style-src-attr 'unsafe-inline'` 放行 Ant Design 布局与进度组件生成的 style 属性，不引入 nonce，也不允许内联 style 元素。
+- 使用 Tailwind CLI 从 `web/src/styles.css` 生成压缩 CSS，只导入 theme 和 utilities，不引入会覆盖 Ant Design 的全局 preflight。
 - 输出到 `web/dist/`，由现有 `express.static(web)` 直接提供。
-- `web/index.html` 只加载 `/dist/app.js` 和 `/dist/app.css`。
+- `web/index.html` 只加载同源 `/dist/antd.css`、`/dist/app.css` 和 `/dist/app.js`。
 - 增加独立 Web TypeScript 配置，并把它纳入 `pnpm typecheck`。
 - 新增的 React、Ant Design、Tailwind 依赖使用锁文件固定版本。
 
@@ -202,6 +203,7 @@ web/
 - 停止确认明确说明“停止不等于撤回已提交申请”。
 - 本地页面不提供第三方登录输入框，不通过 iframe 嵌入招聘网站。
 - 招聘页面链接只允许 HTTP/HTTPS，并使用 `noopener noreferrer`。
+- CSP 明确分离 `style-src-elem 'self'` 与 `style-src-attr 'unsafe-inline'`；前者禁止动态 style 元素，后者仅兼容 Ant Design 生成的组件尺寸属性。
 
 ## 9. 测试迁移与验证
 

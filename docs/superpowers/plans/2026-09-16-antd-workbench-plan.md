@@ -32,9 +32,10 @@
 2. 添加并固定 `@types/react@19.3.0`、`@types/react-dom@19.3.0`、`tailwindcss@4.3.3`、`@tailwindcss/cli@4.3.3`。
 3. 新建 Web TypeScript 配置并纳入 `pnpm typecheck`。
 4. 新建最小 Web 构建脚本：esbuild 打包 TSX，Tailwind CLI 生成 CSS，输出 `web/dist/`。
-5. Tailwind CSS 只导入 theme 和 utilities，不导入 preflight。
-6. 更新主构建脚本调用 Web 构建。
-7. `web/index.html` 改为 React 挂载壳并加载生成产物。
+5. 复制 Ant Design 官方静态 CSS，`ConfigProvider` 启用 `zeroRuntime`；CSP 保持 style 元素仅允许 `self`，单独允许组件所需的 inline style 属性。
+6. Tailwind CSS 只导入 theme 和 utilities，不导入 preflight。
+7. 更新主构建脚本调用 Web 构建。
+8. `web/index.html` 改为 React 挂载壳并加载同源生成产物。
 
 完成条件：依赖、类型配置和构建入口闭合，旧 Web 入口尚未删除也不参与加载。
 
