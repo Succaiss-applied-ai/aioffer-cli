@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">aioffer-cli · 本地招聘投递助手</title>
+  <desc id="desc">少填重复表格，多花时间准备面试。你的资料，你的模型，投递由你掌控。</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101d2e"/><stop offset="1" stop-color="#080f1c"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#6ee7b7"/><stop offset="1" stop-color="#60a5fa"/></linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#263649"/></pattern>
+  </defs>
+  <rect width="1200" height="420" rx="24" fill="url(#bg)"/>
+  <rect x="760" width="440" height="420" rx="24" fill="url(#dots)" opacity=".55"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">
+    <rect x="54" y="45" width="9" height="25" rx="4" fill="#6ee7b7"/>
+    <text x="78" y="66" font-size="25" font-weight="700" fill="#f1f5f9">aioffer-cli</text>
+    <text x="1100" y="64" font-size="14" text-anchor="end" fill="#94a3b8" letter-spacing="2">开源 · 本地 · 自主</text>
+    <text x="54" y="151" font-size="45" font-weight="700" fill="#f8fafc">少填重复表格，</text>
+    <text x="54" y="211" font-size="45" font-weight="700" fill="url(#accent)">多花时间准备面试。</text>
+    <text x="57" y="258" font-size="20" fill="#b5c2d4">你的资料，你的模型，投递由你掌控。</text>
+    <g font-size="15" fill="#dbeafe" text-anchor="middle">
+      <rect x="55" y="303" width="142" height="37" rx="18" fill="#14263a" stroke="#294359"/>
+      <text x="126" y="327">中文本地工作台</text>
+      <rect x="209" y="303" width="136" height="37" rx="18" fill="#14263a" stroke="#294359"/>
+      <text x="277" y="327">自带模型密钥</text>
+      <rect x="357" y="303" width="146" height="37" rx="18" fill="#14263a" stroke="#294359"/>
+      <text x="430" y="327">半自动 / 自动</text>
+    </g>
+    <text x="57" y="382" font-size="13" fill="#8293a9">开发预览版 · 从源码开始 · 不需要 AI Offer 账号</text>
+  </g>
+  <g transform="translate(818 116)">
+    <rect x="22" y="14" width="218" height="229" rx="19" fill="#102436" stroke="#294b60" transform="rotate(7 130 130)"/>
+    <rect width="218" height="229" rx="19" fill="#142439" stroke="#39536d"/>
+    <rect x="24" y="25" width="39" height="39" rx="12" fill="#183d40"/>
+    <path d="m35 44 7 7 13-15" fill="none" stroke="#6ee7b7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="78" y="32" width="107" height="9" rx="4" fill="#a6bad1"/>
+    <rect x="78" y="50" width="72" height="6" rx="3" fill="#425d78"/>
+    <path d="M25 95h167 M25 135h167 M25 175h112" stroke="#39536d" stroke-width="2"/>
+    <path d="M26 84h91 M26 124h126 M26 164h69" stroke="#7c93ad" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="208" cy="203" r="38" fill="#6ee7b7"/>
+    <path d="m190 204 36-17-12 35-7-13-17-5Zm17 5 19-22" fill="none" stroke="#0e2930" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
