@@ -1,6 +1,6 @@
 # Ant Design 本地工作台改造
 
-- 状态：设计已在对话中确认，等待书面规范复核
+- 状态：设计规范已确认，实施计划编写中
 - 分支：`feat/antd-workbench-20260916`
 - 基线：`origin/main@4f6d3c1c1caee0adf4a78974556f724f0203adca`
 - 目标：把现有原生单页工作台重构为方案 A 的 React + Ant Design 任务工作台，保留全部本地 API、插件桥和投递保护语义。
@@ -24,4 +24,4 @@
 
 ## 下一步
 
-用户复核 `docs/superpowers/specs/2026-09-16-antd-workbench-design.md`；确认后编写实施计划。
+按 `docs/superpowers/plans/2026-09-16-antd-workbench-plan.md` 实施并完成获授权的验证。
