@@ -181,10 +181,10 @@ pnpm start
 欢迎加入 **aioffer-cli 沟通反馈4群**，交流安装配置、官网适配、使用问题和功能建议。使用微信或企业微信扫描下方二维码即可进入入群流程。
 
 <p align="center">
-  <img src="docs/assets/wecom-group-4.jpg" alt="aioffer-cli 沟通反馈4群二维码，可使用微信或企业微信扫码；图片标示有效期至 9 月 23 日前" width="360">
+  <img src="docs/assets/wecom-group-4.jpg" alt="aioffer-cli 沟通反馈4群长期入群二维码，使用微信或企业微信扫码" width="280">
 </p>
 
-> 图片标示二维码有效期为 **9 月 23 日前**，不是永久有效的入群码。若提示失效、群满或无法加入，请[提交 Issue 反馈入群问题](https://github.com/Succaiss-applied-ai/aioffer-cli/issues/new?title=%E7%A4%BE%E7%BE%A4%E5%85%A5%E7%BE%A4%E9%97%AE%E9%A2%98)，我们会核实并更新入口。无需公开你的手机号或微信号。
+> 使用企业微信「加入群聊」生成的长期活码。若群满或无法加入，请[提交 Issue 反馈入群问题](https://github.com/Succaiss-applied-ai/aioffer-cli/issues/new?title=%E7%A4%BE%E7%BE%A4%E5%85%A5%E7%BE%A4%E9%97%AE%E9%A2%98)，我们会核实并维护入口。无需公开你的手机号或微信号。
 
 ### 问题反馈与贡献
 
