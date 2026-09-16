@@ -20,6 +20,7 @@ const pageCopy: Record<PageKey, [string, string]> = {
 export function WorkbenchApp() {
   const { message } = AntdApp.useApp();
   const [page, setPage] = useState<PageKey>("dashboard");
+  const [visited, setVisited] = useState<Set<PageKey>>(() => new Set(["dashboard"]));
   const [attemptFilter, setAttemptFilter] = useState<AttemptFilter>("all");
   const [status, setStatus] = useState<LocalStatus | null>(null);
   const [statusError, setStatusError] = useState("");
@@ -41,12 +42,13 @@ export function WorkbenchApp() {
 
   const navigate = useCallback((next: PageKey, filter?: AttemptFilter) => {
     if (filter) setAttemptFilter(filter);
+    setVisited((current) => current.has(next) ? current : new Set(current).add(next));
     setPage(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center"><Spin size="large" tip="正在连接本地服务" /></div>;
+    return <div className="flex min-h-screen items-center justify-center"><Spin size="large" description="正在连接本地服务" /></div>;
   }
 
   if (!status) {
@@ -107,11 +109,11 @@ export function WorkbenchApp() {
           </div>
         </Layout.Header>
         <Layout.Content className="min-h-[calc(100vh-64px)] bg-slate-100 p-4 md:p-6">
-          <div hidden={page !== "dashboard"}><DashboardPage active={page === "dashboard"} navigate={navigate} /></div>
-          <div hidden={page !== "resumes"}><ResumesPage active={page === "resumes"} /></div>
-          <div hidden={page !== "jobs"}><JobsPage active={page === "jobs"} /></div>
-          <div hidden={page !== "attempts"}><AttemptsPage active={page === "attempts"} filter={attemptFilter} onFilterChange={setAttemptFilter} /></div>
-          <div hidden={page !== "settings"}><SettingsPage active={page === "settings"} status={status} onStatusChange={setStatus} /></div>
+          {visited.has("dashboard") && <div hidden={page !== "dashboard"}><DashboardPage active={page === "dashboard"} navigate={navigate} /></div>}
+          {visited.has("resumes") && <div hidden={page !== "resumes"}><ResumesPage active={page === "resumes"} /></div>}
+          {visited.has("jobs") && <div hidden={page !== "jobs"}><JobsPage active={page === "jobs"} /></div>}
+          {visited.has("attempts") && <div hidden={page !== "attempts"}><AttemptsPage active={page === "attempts"} filter={attemptFilter} onFilterChange={setAttemptFilter} /></div>}
+          {visited.has("settings") && <div hidden={page !== "settings"}><SettingsPage active={page === "settings"} status={status} onStatusChange={setStatus} /></div>}
         </Layout.Content>
       </Layout>
     </Layout>

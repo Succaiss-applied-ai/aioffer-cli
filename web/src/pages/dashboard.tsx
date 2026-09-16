@@ -41,13 +41,13 @@ export function DashboardPage({ active, navigate }: { active: boolean; navigate:
     <>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}><Card hoverable onClick={() => navigate("attempts", "active")}><Statistic title="正在执行" value={summary.active} /><Typography.Link>查看当前任务 →</Typography.Link></Card></Col>
-        <Col xs={24} md={8}><Card hoverable onClick={() => navigate("attempts", "waiting")}><Statistic title="等待你处理" value={summary.waiting} valueStyle={{ color: "#d97706" }} /><Typography.Link>登录或补充信息 →</Typography.Link></Card></Col>
-        <Col xs={24} md={8}><Card><Statistic title="今日完成" value={summary.today} valueStyle={{ color: "#059669" }} /><Typography.Text type="secondary">仅以网站回执为准</Typography.Text></Card></Col>
+        <Col xs={24} md={8}><Card hoverable onClick={() => navigate("attempts", "waiting")}><Statistic title="等待你处理" value={summary.waiting} styles={{ content: { color: "#d97706" } }} /><Typography.Link>登录或补充信息 →</Typography.Link></Card></Col>
+        <Col xs={24} md={8}><Card><Statistic title="今日完成" value={summary.today} styles={{ content: { color: "#059669" } }} /><Typography.Text type="secondary">仅以网站回执为准</Typography.Text></Card></Col>
       </Row>
       <Row gutter={[20, 20]} className="mt-5">
         <Col xs={24} xl={10}>
           <Card title="开始新的投递" extra={<Tag color="blue">半自动推荐</Tag>}>
-            <Space direction="vertical" className="w-full" size="middle">
+            <Space orientation="vertical" className="w-full" size="middle">
               <Card size="small" hoverable onClick={() => navigate("resumes")}><Typography.Text type="secondary">资料版本</Typography.Text><div><strong>{confirmed?.assets[0]?.name || "请先确认简历资料"}</strong></div><Tag color={confirmed ? "success" : "warning"}>{confirmed ? "已确认" : "未准备"}</Tag></Card>
               <Card size="small" hoverable onClick={() => navigate("settings")}><Typography.Text type="secondary">执行设备</Typography.Text><div><strong>{device?.deviceName || "请先连接本机插件"}</strong></div><Tag color={device ? "success" : "warning"}>{device ? "在线" : "未连接"}</Tag></Card>
               <Button type="primary" block size="large" disabled={!confirmed || !device} onClick={() => navigate("jobs")}>搜索并选择岗位</Button>

@@ -15,7 +15,6 @@ export function JobsPage({ active }: { active: boolean }) {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
   const [capability, setCapability] = useState("actionable");
-  const [displayed, setDisplayed] = useState({ query: "", city: "", capability: "actionable" });
   const [offset, setOffset] = useState(0);
   const [result, setResult] = useState<JobsResponse | null>(null);
   const [searching, setSearching] = useState(false);
@@ -30,6 +29,9 @@ export function JobsPage({ active }: { active: boolean }) {
   const previewRef = useRef<PreviewState | null>(null);
   const previewRevision = useRef(0);
   const searchRequest = useRef(0);
+  const searchAbort = useRef<AbortController | null>(null);
+  const offsetRef = useRef(0);
+  const displayedRef = useRef({ query: "", city: "", capability: "actionable" });
   const [submitConsent, setSubmitConsent] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -41,23 +43,31 @@ export function JobsPage({ active }: { active: boolean }) {
   };
   const invalidatePreview = () => { previewRevision.current += 1; storePreview(null); };
 
-  const search = useCallback(async (requestedOffset = offset) => {
+  const search = useCallback(async (requestedOffset = offsetRef.current) => {
     const request = ++searchRequest.current;
     const current = { query, city, capability };
+    const displayed = displayedRef.current;
     if (current.query !== displayed.query || current.city !== displayed.city || current.capability !== displayed.capability) requestedOffset = 0;
+    searchAbort.current?.abort();
+    const controller = new AbortController();
+    searchAbort.current = controller;
     setSearching(true);
     try {
-      const data = await api<JobsResponse>(`/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}&capability=${encodeURIComponent(capability)}`);
+      const data = await api<JobsResponse>(`/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}&capability=${encodeURIComponent(capability)}`, undefined, controller.signal);
       if (request !== searchRequest.current) return;
+      offsetRef.current = requestedOffset;
+      displayedRef.current = current;
       setOffset(requestedOffset);
-      setDisplayed(current);
       setResult(data);
     } catch (error) {
+      if (controller.signal.aborted) return;
       if (request === searchRequest.current) throw error;
     } finally {
       if (request === searchRequest.current) setSearching(false);
     }
-  }, [capability, city, displayed, offset, query]);
+  }, [capability, city, query]);
+
+  useEffect(() => () => searchAbort.current?.abort(), []);
 
   useEffect(() => {
     if (!active) return;
@@ -126,16 +136,16 @@ export function JobsPage({ active }: { active: boolean }) {
     <>
       <Card>
         <Form layout="inline" onFinish={() => void search(0).catch((error) => message.error(String(error)))}>
-          <Form.Item label="投递能力"><Select className="w-56" value={capability} onChange={(value) => updateDraft(() => setCapability(value))} options={[
+          <Form.Item label="投递能力"><Select aria-label="投递能力" className="w-56" value={capability} onChange={(value) => updateDraft(() => setCapability(value))} options={[
             { value: "actionable", label: "自动 / 半自动投递" }, { value: "auto", label: "自动投递（免登录）" },
             { value: "assisted", label: "半自动投递（需本人登录）" }, { value: "unverified", label: "登录要求未知" },
             { value: "unavailable", label: "暂不可投递" }, { value: "all", label: "全部岗位" },
           ]} /></Form.Item>
-          <Form.Item><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="岗位 / 公司 / 技能" allowClear /></Form.Item>
-          <Form.Item><Input value={city} onChange={(event) => setCity(event.target.value)} placeholder="城市" allowClear /></Form.Item>
+          <Form.Item><Input aria-label="岗位关键词" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="岗位 / 公司 / 技能" allowClear /></Form.Item>
+          <Form.Item><Input aria-label="城市" value={city} onChange={(event) => setCity(event.target.value)} placeholder="城市" allowClear /></Form.Item>
           <Form.Item><Button type="primary" htmlType="submit" loading={searching}>搜索</Button></Form.Item>
         </Form>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm"><Typography.Text>{result ? `找到 ${result.total} 个岗位` : "正在加载岗位"}</Typography.Text><Tag color="blue">已选 {selected.size} 个</Tag></div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm"><Typography.Text>{result ? `找到 ${result.total} 个岗位 · 当前 ${result.total ? offset + 1 : 0}–${Math.min(offset + 30, result.total)}` : "正在加载岗位"}</Typography.Text><Tag color="blue">已选 {selected.size} 个</Tag></div>
         {summary && <Typography.Paragraph type="secondary" className="!mb-0 !mt-2 text-xs">{summary}</Typography.Paragraph>}
       </Card>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -144,7 +154,7 @@ export function JobsPage({ active }: { active: boolean }) {
           return (
             <Card key={job.jobId} className={selected.has(job.jobId) ? "border-blue-500 bg-blue-50" : ""}>
               <div className="flex items-start gap-3">
-                <Checkbox checked={selected.has(job.jobId)} disabled={!eligible} onChange={(event) => updateSelected(job, event.target.checked)} />
+                <Checkbox aria-label={`选择 ${job.title}`} checked={selected.has(job.jobId)} disabled={!eligible} onChange={(event) => updateSelected(job, event.target.checked)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2"><Typography.Text strong>{job.companyName} · {job.title}</Typography.Text><Tag color={eligible ? "blue" : "default"}>{job.capability?.label || "能力待验证"}</Tag></div>
                   <div className="mt-2 text-sm text-slate-500">{job.locations.join("、")} {job.salary}</div>
@@ -167,10 +177,10 @@ export function JobsPage({ active }: { active: boolean }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Space wrap>
               <Typography.Text strong>已选择 {selected.size} 个岗位</Typography.Text>
-              <Select value={versionId || undefined} placeholder="资料版本" className="w-56" onChange={(value) => updateDraft(() => setVersionId(value))} options={[...versions].reverse().filter((item) => item.confirmedAt).map((item) => ({ value: item.id, label: item.assets[0]?.name || "简历" }))} />
-              <Select value={deviceId || undefined} placeholder="执行设备" className="w-52" onChange={(value) => updateDraft(() => setDeviceId(value))} options={devices.filter((item) => item.capabilities?.includes("aioffer.local-runtime.v1")).map((item) => ({ value: item.deviceId, label: item.deviceName || item.deviceId }))} />
-              <Radio.Group value={mode} onChange={(event) => updateDraft(() => setMode(event.target.value))} options={[{ label: "半自动", value: "assisted" }, { label: "自动", value: "auto" }]} optionType="button" />
-              <Checkbox checked={allowConsentClick} onChange={(event) => updateDraft(() => setAllowConsentClick(event.target.checked))}>允许点击网站协议</Checkbox>
+              <Select aria-label="资料版本" value={versionId || undefined} placeholder="资料版本" className="w-56" onChange={(value) => updateDraft(() => setVersionId(value))} options={[...versions].reverse().filter((item) => item.confirmedAt).map((item) => ({ value: item.id, label: item.assets[0]?.name || "简历" }))} />
+              <Select aria-label="执行设备" value={deviceId || undefined} placeholder="执行设备" className="w-52" onChange={(value) => updateDraft(() => setDeviceId(value))} options={devices.filter((item) => item.capabilities?.includes("aioffer.local-runtime.v1")).map((item) => ({ value: item.deviceId, label: item.deviceName || item.deviceId }))} />
+              <Radio.Group aria-label="投递模式" value={mode} onChange={(event) => updateDraft(() => setMode(event.target.value))} options={[{ label: "半自动", value: "assisted" }, { label: "自动", value: "auto" }]} optionType="button" />
+              <Checkbox aria-label="允许点击网站协议" checked={allowConsentClick} onChange={(event) => updateDraft(() => setAllowConsentClick(event.target.checked))}>允许点击网站协议</Checkbox>
             </Space>
             <Space><Button onClick={() => { setSelected(new Map()); invalidatePreview(); }}>清空</Button><Button type="primary" loading={previewing} onClick={() => void requestPreview().catch((error) => message.error(String(error)))}>核对本次投递</Button></Space>
           </div>
@@ -181,7 +191,7 @@ export function JobsPage({ active }: { active: boolean }) {
         {preview && <>
           <Typography.Paragraph><strong>{preview.request.mode === "auto" ? "自动" : "半自动"}</strong> · {preview.response.resumeName || "已确认资料"}</Typography.Paragraph>
           {preview.response.jobs.map((job) => <Card key={job.jobId} size="small" className="mb-2"><strong>{job.companyName} / {job.title}</strong><div className="mt-1 text-xs text-slate-500">{job.capability?.label || "能力待验证"}：{job.capability?.reason || "缺少能力证据"}</div></Card>)}
-          <Checkbox checked={submitConsent} onChange={(event) => setSubmitConsent(event.target.checked)}>
+          <Checkbox aria-label="确认发起投递" checked={submitConsent} onChange={(event) => setSubmitConsent(event.target.checked)}>
             我已核对岗位与资料，确认发起以上任务；自动模式同时授权最终提交
           </Checkbox>
         </>}

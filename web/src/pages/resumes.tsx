@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { App, Button, Card, Checkbox, Empty, List, Select, Space, Tag, Typography, Upload } from "antd";
+import { App, Button, Card, Checkbox, Empty, Select, Space, Tag, Typography, Upload } from "antd";
 import { api, fileAsBase64 } from "../api.js";
 import type { ApplicationAsset, ResumeVersion } from "../types.js";
 
@@ -83,14 +83,12 @@ export function ResumesPage({ active }: { active: boolean }) {
         <Checkbox className="my-4" checked={parsingConsent} onChange={(event) => setParsingConsent(event.target.checked)}>
           同意将简历发送给 MinerU（纯文本跳过）和所选模型提取资料
         </Checkbox>
-        {versions.length ? (
-          <List dataSource={[...versions].reverse()} renderItem={(item) => (
-            <List.Item onClick={() => selectVersion(versions, item.id)} className={item.id === selectedId ? "cursor-pointer rounded-lg bg-blue-50 px-3" : "cursor-pointer px-3"}>
-              <List.Item.Meta title={item.assets[0]?.name || "简历"} description={`${new Date(item.createdAt).toLocaleString("zh-CN")} · ${item.confirmedAt ? "已确认" : "待核对"}`} />
-              <Tag color={item.confirmedAt ? "success" : "warning"}>{item.confirmedAt ? "已确认" : "草稿"}</Tag>
-            </List.Item>
-          )} />
-        ) : <Empty description="尚未导入简历" />}
+        {versions.length ? <div className="space-y-2">{[...versions].reverse().map((item) => (
+          <button key={item.id} type="button" onClick={() => selectVersion(versions, item.id)} className={item.id === selectedId ? "flex w-full items-center justify-between rounded-lg bg-blue-50 px-3 py-3 text-left" : "flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-3 text-left"}>
+            <span><strong className="block">{item.assets[0]?.name || "简历"}</strong><span className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString("zh-CN")} · {item.confirmedAt ? "已确认" : "待核对"}</span></span>
+            <Tag color={item.confirmedAt ? "success" : "warning"}>{item.confirmedAt ? "已确认" : "草稿"}</Tag>
+          </button>
+        ))}</div> : <Empty description="尚未导入简历" />}
       </Card>
       <Card title="结构化资料" className="xl:col-span-3" extra={selected && <Tag color={selected.confirmedAt ? "success" : "warning"}>{selected.confirmedAt ? "已确认" : "待核对"}</Tag>}>
         <Typography.Paragraph type="secondary">请删除错误内容、补充真实事实；确认时会另存为不可变版本。</Typography.Paragraph>

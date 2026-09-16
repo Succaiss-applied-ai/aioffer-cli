@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { App, Alert, Button, Card, Checkbox, Drawer, Empty, Form, Input, List, Modal, Radio, Select, Space, Tag, Typography } from "antd";
+import { App, Alert, Button, Card, Checkbox, Drawer, Empty, Form, Input, Radio, Select, Space, Typography } from "antd";
 import { finalReviewNotice } from "../../review-notice.js";
 import { api } from "../api.js";
 import { bridge } from "../bridge.js";
@@ -23,7 +23,7 @@ function RequiredFieldsForm({ batchId, job, onDone }: { batchId: string; job: Au
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const fields = job.evidence?.requiredFieldRequests ?? [];
-  if (!fields.length) return <Alert type="warning" showIcon message="缺少可编辑的问题清单，请检查诊断记录" />;
+  if (!fields.length) return <Alert type="warning" showIcon title="缺少可编辑的问题清单，请检查诊断记录" />;
   const submit = async (values: Record<string, string | string[]>) => {
     setLoading(true);
     try {
@@ -156,36 +156,36 @@ export function AttemptsPage({ active, filter, onFilterChange }: Props) {
           const batch = attempt.batch;
           return (
             <Card key={attempt.id} title={`${attempt.mode === "auto" ? "自动" : "半自动"} · ${new Date(attempt.createdAt).toLocaleString("zh-CN")}`} extra={batch && <StatusTag status={batch.status} />}>
-              {!batch ? <Alert type="warning" showIcon message="任务创建结果不明确" description="已阻止重复投递，请保留本地数据检查。" /> : <>
+              {!batch ? <Alert type="warning" showIcon title="任务创建结果不明确" description="已阻止重复投递，请保留本地数据检查。" /> : <>
                 <Space wrap className="mb-4">
                   {["running", "queued"].includes(batch.status) && <Button loading={action === `pause:${batch.batchId}`} onClick={() => void runAction(`pause:${batch.batchId}`, `/automation/auto-apply/v1/batches/${batch.batchId}/pause`).catch((error) => message.error(String(error)))}>暂停批次</Button>}
                   {batch.status === "paused" && batch.pauseReason === "user_requested" && <Button type="primary" loading={action === `resume:${batch.batchId}`} onClick={() => void runAction(`resume:${batch.batchId}`, `/automation/auto-apply/v1/batches/${batch.batchId}/resume`).catch((error) => message.error(String(error)))}>恢复批次</Button>}
                   {!finishedStatuses.has(batch.status) && <Button danger loading={action === `cancel:${batch.batchId}`} onClick={() => confirmStop(batch)}>停止批次</Button>}
                 </Space>
-                <List dataSource={batch.jobs} renderItem={(job) => {
+                <div className="space-y-3">{batch.jobs.map((job) => {
                   const jobPath = `/automation/auto-apply/v1/batches/${batch.batchId}/jobs/${job.batchJobId}`;
                   return (
-                    <List.Item key={job.batchJobId} className="!block rounded-lg border border-slate-200 !p-4">
+                    <div key={job.batchJobId} className="rounded-lg border border-slate-200 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-2"><div><Typography.Text strong>{job.companyName} · {job.title}</Typography.Text><div className="mt-1 text-sm text-slate-500">{statusLabels[job.status] || job.status} · {jobMessage(job)}</div></div><Space><StatusTag status={job.status} /><Button size="small" onClick={() => setDrawer({ batch, job })}>任务详情</Button></Space></div>
                       {job.evidence?.pageUrl && <div className="mt-2"><SafeExternalLink href={job.evidence.pageUrl}>打开招聘页面</SafeExternalLink></div>}
                       {attempt.retryableLoginJobIds?.includes(job.jobId) && <RetryAction attempt={attempt} batch={batch} job={job} onDone={refresh} />}
                       {job.status === "waiting_for_user_action" && job.reasonCode === "final_review_required" && (
-                        <Alert className="mt-3" type="warning" showIcon message="提交前需要你核对原招聘页面" description={<><p>{finalReviewNotice(job)}</p><Button type="primary" loading={action === `confirm:${job.batchJobId}`} onClick={() => void runAction(`confirm:${job.batchJobId}`, `/api/batches/${batch.batchId}/jobs/${job.batchJobId}/confirm`, { confirmedByUser: true, reviewHash: job.evidence?.failureDetails?.reviewHash }).catch((error) => message.error(String(error)))}>已核对原页面，确认最终投递</Button></>} />
+                        <Alert className="mt-3" type="warning" showIcon title="提交前需要你核对原招聘页面" description={<><p>{finalReviewNotice(job)}</p><Button type="primary" loading={action === `confirm:${job.batchJobId}`} onClick={() => void runAction(`confirm:${job.batchJobId}`, `/api/batches/${batch.batchId}/jobs/${job.batchJobId}/confirm`, { confirmedByUser: true, reviewHash: job.evidence?.failureDetails?.reviewHash }).catch((error) => message.error(String(error)))}>已核对原页面，确认最终投递</Button></>} />
                       )}
                       {job.status === "waiting_for_user_action" && job.reasonCode === "missing_information" && <RequiredFieldsForm key={`${job.batchJobId}:${job.evidence?.requiredFieldRequests?.map((field) => field.fieldId).join(",")}`} batchId={batch.batchId} job={job} onDone={refresh} />}
                       {job.status === "waiting_for_user_action" && !["final_review_required", "missing_information"].includes(job.reasonCode ?? "") && (
-                        <Alert className="mt-3" type="info" showIcon message="请在第三方招聘页面完成登录或验证" description={<Button type="primary" loading={action === `continue:${job.batchJobId}`} onClick={() => void runAction(`continue:${job.batchJobId}`, `${jobPath}/resume`).catch((error) => message.error(String(error)))}>我已处理，继续</Button>} />
+                        <Alert className="mt-3" type="info" showIcon title="请在第三方招聘页面完成登录或验证" description={<Button type="primary" loading={action === `continue:${job.batchJobId}`} onClick={() => void runAction(`continue:${job.batchJobId}`, `${jobPath}/resume`).catch((error) => message.error(String(error)))}>我已处理，继续</Button>} />
                       )}
-                    </List.Item>
+                    </div>
                   );
-                }} />
+                })}</div>
               </>}
             </Card>
           );
         })}
         {!visibleAttempts.length && <Card><Empty description="没有符合当前筛选的投递记录" /></Card>}
       </div>
-      <Drawer title="任务详情" width={460} open={Boolean(drawer)} onClose={() => setDrawer(null)}>
+      <Drawer title="任务详情" open={Boolean(drawer)} onClose={() => setDrawer(null)}>
         {drawer && <>
           <Typography.Title level={5}>{drawer.job.companyName} · {drawer.job.title}</Typography.Title>
           <StatusTag status={drawer.job.status} />
