@@ -13,6 +13,13 @@ let offset = 0,
   preview = null,
   configuration;
 let extraAssetIds = [];
+let previewRevision = 0;
+function invalidatePreview() {
+  previewRevision++;
+  preview = null;
+  $("previewArea").hidden = true;
+  $("submitConsent").checked = false;
+}
 const instance =
   sessionStorage.getItem("aioffer-instance") || crypto.randomUUID();
 sessionStorage.setItem("aioffer-instance", instance);
@@ -36,7 +43,7 @@ async function api(path, body) {
     );
   return data;
 }
-function bind(id, handler, event = "click") {
+function bind(id, handler, event = "click", isDisabled = () => false) {
   $(id).addEventListener(event, async (e) => {
     e.preventDefault();
     const button = e.submitter || $(id);
@@ -46,7 +53,7 @@ function bind(id, handler, event = "click") {
     } catch (error) {
       notice(error.message, true);
     } finally {
-      button.disabled = false;
+      button.disabled = isDisabled();
     }
   });
 }
@@ -191,8 +198,7 @@ function showVersion() {
   $("attachments").replaceChildren();
   const v = versions.find((x) => x.id === $("version").value);
   $("profile").value = v ? JSON.stringify(v.profile, null, 2) : "";
-  preview = null;
-  $("previewArea").hidden = true;
+  invalidatePreview();
 }
 async function resumes(id) {
   versions = await api("/api/resumes");
@@ -262,14 +268,44 @@ bind("confirmProfile", async () => {
   notice("已保存新的确认版本。");
 });
 function selection() {
-  preview = null;
-  $("previewArea").hidden = true;
+  invalidatePreview();
   $("selectionCount").textContent = `已选 ${selected.size} 个`;
 }
-async function search() {
-  const result = await api(
-    `/api/jobs?q=${encodeURIComponent($("query").value)}&city=${encodeURIComponent($("city").value)}&offset=${offset}`,
-  );
+let searchRequest = 0;
+let searchPending = false;
+let displayedQuery = "", displayedCity = "";
+const previousDisabled = () => searchPending || offset === 0;
+const nextDisabled = () => searchPending || offset + 30 >= total;
+function updatePagination() {
+  $("previous").disabled = previousDisabled();
+  $("next").disabled = nextDisabled();
+}
+async function search(requestedOffset = offset) {
+  const request = ++searchRequest;
+  const query = $("query").value, city = $("city").value;
+  if (query !== displayedQuery || city !== displayedCity) requestedOffset = 0;
+  searchPending = true;
+  updatePagination();
+  try {
+    const result = await api(
+      `/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}`,
+    );
+    // 仅最新成功响应可以替换列表和页码；失败不消耗当前页。
+    if (request !== searchRequest) return;
+    offset = requestedOffset;
+    displayedQuery = query;
+    displayedCity = city;
+    renderJobs(result);
+  } catch (error) {
+    if (request === searchRequest) throw error;
+  } finally {
+    if (request === searchRequest) {
+      searchPending = false;
+      updatePagination();
+    }
+  }
+}
+function renderJobs(result) {
   total = result.total;
   $("jobCount").textContent =
     `找到 ${total} 个 · 当前 ${total ? offset + 1 : 0}–${Math.min(offset + 30, total)}`;
@@ -303,31 +339,24 @@ async function search() {
     div.append(detail);
     $("jobs").append(div);
   }
-  $("previous").disabled = offset === 0;
-  $("next").disabled = offset + 30 >= total;
 }
 bind(
   "search",
   async () => {
-    offset = 0;
-    await search();
+    await search(0);
   },
   "submit",
 );
-bind("previous", async () => {
-  offset = Math.max(0, offset - 30);
-  await search();
-});
-bind("next", async () => {
-  if (offset + 30 < total) offset += 30;
-  await search();
-});
+bind("previous", () => search(Math.max(0, offset - 30)), "click", previousDisabled);
+bind("next", () => search(offset + 30 < total ? offset + 30 : offset), "click", nextDisabled);
 bind("clearSelection", async () => {
   selected.clear();
   selection();
   await search();
 });
 bind("preview", async () => {
+  invalidatePreview();
+  const revision = previewRevision;
   const body = {
     versionId: $("version").value,
     deviceId: $("device").value,
@@ -340,6 +369,8 @@ bind("preview", async () => {
   if (body.mode === "assisted" && body.jobIds.length !== 1)
     throw Error("半自动模式每次选择一个岗位");
   const result = await api("/api/preview", body);
+  // 用户修改选择后，旧请求不得恢复已失效的确认入口。
+  if (revision !== previewRevision) return;
   preview = {
     ...body,
     idempotencyKey: crypto.randomUUID(),
@@ -361,20 +392,17 @@ bind("preview", async () => {
   $("previewArea").hidden = false;
 });
 for (const id of ["mode", "consentClick", "device"])
-  $(id).addEventListener("change", () => {
-    preview = null;
-    $("previewArea").hidden = true;
-  });
+  $(id).addEventListener("change", invalidatePreview);
 bind("start", async () => {
   if (!preview || !$("submitConsent").checked)
     throw Error("请先核对并勾选本次投递确认");
-  const result = await api("/api/attempts", preview);
+  const submittedPreview = preview;
+  const result = await api("/api/attempts", submittedPreview);
   await bridge("RECRUITING_AUTO_APPLY_WAKE", {
-    deviceId: preview.deviceId,
+    deviceId: submittedPreview.deviceId,
     batchId: result.batchId,
   }).catch((e) => notice(`任务已保存；${e.message}。不要重复创建。`, true));
-  preview = null;
-  $("previewArea").hidden = true;
+  if (preview === submittedPreview) invalidatePreview();
   await refreshAttempts();
 });
 const labels = {
