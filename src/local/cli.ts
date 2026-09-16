@@ -7,6 +7,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { acquireRuntimeLock } from "./runtime-lock.js";
 import { createLocalApp, localOrigin } from "./server.js";
+import { capabilityFilter } from "./job-capability.js";
 import { loadCatalog, searchCatalog } from "./catalog.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -17,17 +18,22 @@ const dataDir = process.env.AIOFFER_DATA_DIR
   : join(homedir(), ".aioffer-cli");
 if (["--help", "-h", "help"].includes(command)) {
   console.log(
-    "aioffer-cli — 本地招聘投递助手\n\naioffer start [--no-open]  启动本地界面\naioffer jobs <关键词>     离线搜索岗位\naioffer doctor            检查运行环境\n\nNode.js 22+；Chrome 扩展需手动加载 extension/dist。配置和数据仅在本机保存。",
+    "aioffer-cli — 本地招聘投递助手\n\naioffer start [--no-open]  启动本地界面\naioffer jobs <关键词> [--capability auto|assisted|actionable|unverified|unavailable|all] [--offset N]  离线按能力搜索\naioffer doctor            检查运行环境\n\nNode.js 22+；Chrome 扩展需手动加载 extension/dist。配置和数据仅在本机保存。",
   );
 } else if (command === "jobs") {
-  const result = searchCatalog(
-    await loadCatalog(join(root, "data/jobs.json.gz")),
-    args.slice(1).join(" "),
-  );
+  const words: string[] = [];
+  let filter = capabilityFilter("actionable"), offset = 0;
+  for (let i = 1; i < args.length; i++) {
+    if (args[i] === "--capability") filter = capabilityFilter(args[++i]);
+    else if (args[i] === "--offset") { offset = Number(args[++i]); if (!Number.isSafeInteger(offset) || offset < 0) throw Error("offset 必须为非负整数"); }
+    else if (args[i]!.startsWith("--")) throw Error("未知搜索选项");
+    else words.push(args[i]!);
+  }
+  const result = searchCatalog(await loadCatalog(join(root, "data/jobs.json.gz")), words.join(" "), "", offset, 30, filter);
   console.log(`找到 ${result.total} 个岗位（快照 ${result.exportedAt}）`);
   for (const job of result.items)
     console.log(
-      `${job.jobId}\t${job.companyName}\t${job.title}\t${job.locations.join("、")}`,
+      `${job.jobId}\t${job.companyName}\t${job.title}\t${job.locations.join("、")}\t${job.capability.label}\t${job.applicationUrl}`,
     );
 } else if (command === "doctor") {
   const catalog = await loadCatalog(join(root, "data/jobs.json.gz"));

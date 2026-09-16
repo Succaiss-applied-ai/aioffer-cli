@@ -26,6 +26,7 @@ import {
 } from "./providers.js";
 import { LocalStore } from "./store.js";
 import { canRetryLogin } from "./retry-policy.js";
+import { assertJobMode, jobCapability, capabilityFilter } from "./job-capability.js";
 import { loadCatalog, searchCatalog, type Catalog } from "./catalog.js";
 import { parseMineru } from "./mineru.js";
 import { testVisionModel } from "./vision-probe.js";
@@ -272,6 +273,8 @@ export async function createLocalApp(options: {
         String(req.query.q ?? ""),
         String(req.query.city ?? ""),
         offset,
+        30,
+        capabilityFilter(req.query.capability ?? "actionable"),
       ),
     );
   });
@@ -397,7 +400,8 @@ export async function createLocalApp(options: {
     const selected = input.jobIds.map((id) => {
       const job = jobs.get(id);
       if (!job) throw Error("岗位不存在");
-      return { ...job, support: matchSiteAdapter(job.applicationUrl) };
+      assertJobMode(job, input.mode);
+      return { ...job, capability: jobCapability(job), support: matchSiteAdapter(job.applicationUrl) };
     });
     res.json({
       versionId: version.id,
@@ -423,8 +427,10 @@ export async function createLocalApp(options: {
           throw Error("幂等键与原请求不一致");
         return existing;
       }
+      const targetUrls = new Set(input.jobIds.map(id => jobs.get(id)?.applicationUrl).filter(Boolean));
+      if (targetUrls.size !== input.jobIds.length) throw Error("岗位不存在或同一投递地址重复选择");
       const overlaps = attempts.filter((x) =>
-        x.jobIds.some((id) => input.jobIds.includes(id)),
+        x.jobIds.some((id) => input.jobIds.includes(id) || targetUrls.has(jobs.get(id)?.applicationUrl)),
       );
       if (overlaps.length && !input.retryOf)
         throw Error(
@@ -462,6 +468,7 @@ export async function createLocalApp(options: {
       const selected = input.jobIds.map((id) => {
         const job = jobs.get(id);
         if (!job) throw Error("岗位不存在");
+        assertJobMode(job, input.mode);
         return job;
       });
       const attempt: Attempt = {

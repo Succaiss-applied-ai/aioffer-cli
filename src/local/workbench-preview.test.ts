@@ -18,7 +18,7 @@ async function boot(preview: () => Promise<unknown>, create = async () => ({ bat
     if (path === "/api/status") data = { jobs: 1, extensionPath: "fixture", providers: { qwen: { label: "测试", baseUrl: "https://example.com" } } };
     if (path === "/api/devices") data = ["device-a", "device-b"].map(deviceId => ({ deviceId, capabilities: ["aioffer.local-runtime.v1"] }));
     if (path === "/api/resumes") data = ["version-a", "version-b"].map(id => ({ id, assets: [], profile: {}, createdAt: "2026-09-16", confirmedAt: "2026-09-16" }));
-    if (path.startsWith("/api/jobs")) data = { total: 1, items: [{ jobId: "job", title: "测试岗位", companyName: "测试", locations: [], salary: "面议", applicationUrl: "https://example.com/job" }] };
+    if (path.startsWith("/api/jobs")) data = { total: 1, items: [{ jobId: "job", title: "测试岗位", companyName: "测试", locations: [], salary: "面议", capability: { kind: "auto", label: "自动投递候选", reason: "合成测试能力", allowedModes: ["auto", "assisted"] }, applicationUrl: "https://example.com/job" }] };
     if (path === "/api/preview") data = await preview();
     if (path === "/api/attempts" && options.method === "POST") { calls.push(JSON.parse(options.body as string)); data = await create(); }
     return { ok: true, json: async () => data };

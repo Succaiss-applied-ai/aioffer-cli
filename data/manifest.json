@@ -1,8 +1,15 @@
 {
-  "schemaVersion": "aioffer-local-catalog.v1",
-  "total": 25553,
-  "exportedAt": "2026-09-15T06:39:13.503Z",
-  "sha256": "dddd35b37cdc7adecc2b94be4f37fce32432ab936d40d17f802f6bdb70ad9bfc",
-  "source": "AI Offer 岗位服务公开职位快照",
-  "note": "静态快照；以企业招聘官网的实时状态为准。职位描述的权利属于原发布方。"
+  "schemaVersion": "aioffer-local-catalog.v2",
+  "total": 29627,
+  "activeTotal": 27296,
+  "exportedAt": "2026-09-16T07:39:43.871Z",
+  "sha256": "9086a6f451e81d69e6ad0655512cd53018831edebf1ed8d174511d204c5e90cc",
+  "source": "AI Offer 公开岗位快照及匿名岗位能力摘要",
+  "capabilityCounts": {
+    "auto": 82,
+    "assisted": 7,
+    "unverified": 27207,
+    "unavailable": 2331
+  },
+  "note": "自动/半自动候选按证据筛选；来源系统记录不等于本 CLI 逐岗验收；快照不自动更新。"
 }

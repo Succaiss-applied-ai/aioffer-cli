@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 type Page = { total: number; items: ReturnType<typeof job>[] };
 function job(title: string) {
-  return { jobId: title, title, companyName: "测试公司", locations: [], salary: "面议", description: "测试", applicationUrl: "https://example.com/job" };
+  return { jobId: title, title, companyName: "测试公司", locations: [], salary: "面议", description: "测试", capability: { kind: "auto", label: "自动投递候选", reason: "合成测试能力", allowedModes: ["auto", "assisted"] }, applicationUrl: "https://example.com/job" };
 }
 const button = (id: string) => document.getElementById(id) as HTMLButtonElement;
 const field = (id: string) => document.getElementById(id) as HTMLInputElement;
@@ -76,4 +76,19 @@ it("修改筛选条件后翻页，从新条件的第一页开始", async () => {
   field("city").value = "北京";
   button("next").click(); await flush();
   expect(offsets).toEqual([0, 30, 0]);
+});
+
+it("能力筛选会传给后端并从第一页开始，未验证岗位不能选择", async () => {
+  const urls: URL[] = [];
+  await boot(async url => {
+    urls.push(url);
+    return { total: 100, items: [{ ...job("未知网页"), capability: { kind: "unverified", label: "能力待验证", reason: "没有能力依据", allowedModes: [] } }] };
+  });
+  expect((document.querySelector("#jobs input") as HTMLInputElement).disabled).toBe(true);
+  expect(document.getElementById("jobs")!.textContent).toContain("没有能力依据");
+  button("next").click(); await flush();
+  field("capability").value = "auto";
+  field("capability").dispatchEvent(new Event("change", { bubbles: true }));await flush();
+  expect(urls.at(-1)!.searchParams.get("capability")).toBe("auto");
+  expect(urls.at(-1)!.searchParams.get("offset")).toBe("0");
 });

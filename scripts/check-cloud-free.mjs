@@ -47,9 +47,15 @@ const allowed = new Set([
   "salary",
   "tags",
   "verifiedAt",
+  "sourceJobId",
+  "availability",
+  "loginRequirement",
+  "deliveryEvidence",
 ]);
 for (const job of catalog.items) {
   assert(Object.keys(job).every((key) => allowed.has(key)));
+  if (job.loginRequirement) assert(Object.keys(job.loginRequirement).every(k => ["status", "scope", "verificationMethod", "verifiedAt", "evidenceUrl"].includes(k)));
+  if (job.deliveryEvidence) assert(Object.keys(job.deliveryEvidence).every(k => ["successfulOn", "latestStatus", "latestOn"].includes(k)));
   const url = new URL(job.applicationUrl);
   assert(
     ["http:", "https:"].includes(url.protocol) &&
