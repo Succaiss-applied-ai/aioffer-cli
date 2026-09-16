@@ -39,7 +39,7 @@ export async function mountTestWorkbench(): Promise<Root> {
   const root = createRoot(document.getElementById("root")!);
   currentRoot = root;
   await act(async () => {
-    root.render(<ConfigProvider locale={zhCN} theme={{ zeroRuntime: true }}><AntdApp><WorkbenchApp /></AntdApp></ConfigProvider>);
+    root.render(<ConfigProvider locale={zhCN} theme={{ zeroRuntime: true, cssVar: { key: "css-var-_R_0_" } }}><AntdApp><WorkbenchApp /></AntdApp></ConfigProvider>);
   });
   return root;
 }

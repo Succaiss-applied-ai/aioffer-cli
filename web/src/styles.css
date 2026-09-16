@@ -21,3 +21,22 @@
     min-width: 320px;
   }
 }
+
+.workbench-sider {
+  position: fixed !important;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 30;
+  overflow: auto;
+}
+
+.workbench-header {
+  position: sticky !important;
+  top: 0;
+  z-index: 20;
+  min-height: 64px;
+  height: auto !important;
+  padding: 12px 24px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e2e8f0;
+}

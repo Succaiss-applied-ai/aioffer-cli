@@ -71,7 +71,7 @@ export function WorkbenchApp() {
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        className="fixed inset-y-0 left-0 z-30 overflow-auto"
+        className="workbench-sider"
       >
         <div className="px-5 py-5 text-xl font-bold text-white">
           <BrandLink suffix={collapsed ? "" : "-cli"} />
@@ -97,7 +97,7 @@ export function WorkbenchApp() {
         )}
       </Layout.Sider>
       <Layout className={collapsed ? "ml-[72px]" : "ml-[200px]"}>
-        <Layout.Header className="sticky top-0 z-20 flex h-auto min-h-16 items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <Layout.Header className="workbench-header flex items-center justify-between">
           <div>
             <Typography.Title level={4} className="!mb-0">{title}</Typography.Title>
             <Typography.Text type="secondary" className="text-xs">{subtitle}</Typography.Text>

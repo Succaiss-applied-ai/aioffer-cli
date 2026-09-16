@@ -10,7 +10,7 @@ export function mountWorkbench(container: HTMLElement) {
   const root = createRoot(container);
   root.render(
     <StrictMode>
-      <ConfigProvider locale={zhCN} theme={{ zeroRuntime: true }}>
+      <ConfigProvider locale={zhCN} theme={{ zeroRuntime: true, cssVar: { key: "css-var-_R_0_" } }}>
         <AntdApp>
           <WorkbenchApp />
         </AntdApp>
