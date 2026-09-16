@@ -27,6 +27,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:local": "vitest run src/local",
+    "test:cli": "node scripts/test-cli-lifecycle.mjs",
     "check:cloud": "node scripts/check-cloud-free.mjs"
   },
   "dependencies": {
