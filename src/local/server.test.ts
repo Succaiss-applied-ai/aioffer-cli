@@ -327,3 +327,11 @@ it.each([
   expect(await denied.text()).toContain("不可使用半自动模式");
   expect(await local.store.read("attempts", [])).toEqual([]);
 });
+
+it("生产数据的需登录岗位即使没有历史成功记录也进入半自动列表", async () => {
+ const { request } = await fixture({ loginRequirement: {status:"required",scope:"company_source",verificationMethod:"source_config",verifiedAt:"",evidenceUrl:""}, deliveryEvidence: undefined });
+ const list = await (await request("/api/jobs?capability=assisted")).json();
+ expect(list.total).toBe(1);
+ expect(list.items[0].capability).toMatchObject({kind:"assisted",allowedModes:["assisted"]});
+ expect(list.companyCounts).toEqual({total:1,auto:0,assisted:1,mixed:0});
+});

@@ -1,10 +1,9 @@
-import { matchSiteAdapter } from "../gateway/site-adapter-registry.js";
 import type { LocalJob } from "./catalog.js";
 
 export const capabilityLabels = {
-  auto: "自动投递候选",
-  assisted: "半自动投递候选",
-  unverified: "能力待验证",
+  auto: "自动投递（免登录）",
+  assisted: "半自动投递（需本人登录）",
+  unverified: "登录要求未知",
   unavailable: "暂不可投递",
 } as const;
 export type CapabilityKind = keyof typeof capabilityLabels;
@@ -15,28 +14,21 @@ export function capabilityFilter(value: unknown): CapabilityFilter {
   throw Error("无效的投递能力筛选");
 }
 
-// 登录要求、适配器与历史结果是不同证据。不得从 HTTP URL 或 required 推导支持。
+// 与 AI Offer 数据口径一致：auto_apply -> not_required；login_required -> required。
+// CLI 将需本人登录的入口展示为半自动。历史成功和适配器类型不是岗位准入白名单。
 export function jobCapability(job: LocalJob) {
   let kind: CapabilityKind = "unverified";
-  let reason = "缺少可核实的填写或投递证据，暂不开放任务";
-  const login = job.loginRequirement;
-  const adapter = matchSiteAdapter(job.applicationUrl);
+  let reason = "来源未标注登录要求，暂不分类";
   const safeUrl = (() => { try { const u = new URL(job.applicationUrl); return /^https?:$/.test(u.protocol) && !u.username && !u.password; } catch { return false; } })();
-  const verifiedLogin = login && ["manual_apply_flow", "automated_apply_probe", "form_observation", "source_config"].includes(login.verificationMethod)
-    && ["job", "company", "company_source"].includes(login.scope) && Number.isFinite(Date.parse(login.verifiedAt)) && /^https?:\/\//.test(login.evidenceUrl);
   if (job.availability !== "active" || !safeUrl) {
     kind = job.availability === "unavailable" || !safeUrl ? "unavailable" : "unverified";
     reason = job.availability === "unavailable" ? "最新公开有效岗位快照未收录，已禁止创建新任务" : "缺少有效岗位状态或投递地址";
-  } else if (verifiedLogin && login.status === "not_required" && adapter.supportLevel === "specialized") {
+  } else if (job.loginRequirement?.status === "not_required") {
     kind = "auto";
-    reason = "免登录入口已核验，并匹配专用适配器；完整投递仍需实际回执验证";
-  } else if (job.deliveryEvidence?.successfulOn && Number.isFinite(Date.parse(job.deliveryEvidence.successfulOn))) {
+    reason = "生产数据标记免登录（not_required / auto_apply），可选择自动或半自动";
+  } else if (job.loginRequirement?.status === "required") {
     kind = "assisted";
-    reason = "来源系统有该岗位成功记录；请处理登录等人工环节，逐岗确认提交，本 CLI 尚未逐岗复验";
-  } else if (login?.status === "not_required") {
-    reason = "仅有免登录依据，尚无专用适配器或成功记录，不作为可自动投递岗位";
-  } else if (login?.status === "required") {
-    reason = "需要登录，且缺少该岗位的成功证据，不能直接归为可半自动投递";
+    reason = "生产数据标记需登录（required / login_required），本人登录后由助手填写并逐岗确认提交";
   }
   return { kind, label: capabilityLabels[kind], reason,
     allowedModes: (kind === "auto" ? ["auto", "assisted"] : kind === "assisted" ? ["assisted"] : []) as Array<"auto" | "assisted"> };
@@ -44,4 +36,25 @@ export function jobCapability(job: LocalJob) {
 export function assertJobMode(job: LocalJob, mode: "auto" | "assisted") {
   const capability = jobCapability(job);
   if (!capability.allowedModes.includes(mode)) throw Error(`${job.companyName} / ${job.title}：${capability.reason}；不可使用${mode === "auto" ? "自动" : "半自动"}模式`);
+}
+
+// 企业名称原样去重；同企业可以同时有免登录与需登录岗位，不相加冒充企业总量。
+export function companyCoverage(jobs: LocalJob[]) {
+  const groups = new Map<string, { companyName: string; autoJobs: number; assistedJobs: number; entries: Map<string, { url: string; kind: "auto" | "assisted" }> }>();
+  for (const j of jobs) {
+    const kind = jobCapability(j).kind;
+    if (kind !== "auto" && kind !== "assisted") continue;
+    let row = groups.get(j.companyName);
+    if (!row) { row = { companyName: j.companyName, autoJobs: 0, assistedJobs: 0, entries: new Map() }; groups.set(j.companyName, row); }
+    if (kind === "auto") row.autoJobs++; else row.assistedJobs++;
+    const u = new URL(j.applicationUrl);
+    // 同一 ATS 域名下的不同企业、校招/社招入口不可合并成一家网站。
+    const site = u.hostname === "app.mokahr.com" ? u.origin + u.pathname : u.origin;
+    const key = `${kind}:${site}`;
+    const previous = row.entries.get(key);
+    if (!previous || j.applicationUrl < previous.url) row.entries.set(key, { url: j.applicationUrl, kind });
+  }
+  const companies = [...groups.values()].sort((a,b) => a.companyName.localeCompare(b.companyName,"zh-CN")).map(r=>({companyName:r.companyName,autoJobs:r.autoJobs,assistedJobs:r.assistedJobs,entries:[...r.entries.values()].sort((a,b)=>a.url.localeCompare(b.url,"en"))}));
+  const counts = { total: companies.length, auto: companies.filter(c=>c.autoJobs>0).length, assisted: companies.filter(c=>c.assistedJobs>0).length, mixed: companies.filter(c=>c.autoJobs>0&&c.assistedJobs>0).length };
+  return { counts, companies };
 }

@@ -313,7 +313,8 @@ function renderJobs(result) {
   $("jobCount").textContent =
     `找到 ${total} 个 · 当前 ${total ? offset + 1 : 0}–${Math.min(offset + 30, total)}`;
   const counts = result.capabilityCounts;
-  $("capabilitySummary").textContent = counts ? `快照 ${result.exportedAt?.slice(0, 10)} · 自动候选 ${counts.auto} · 半自动候选 ${counts.assisted} · 待验证 ${counts.unverified} · 暂不可用 ${counts.unavailable}` : "";
+  const companies = result.companyCounts;
+  $("capabilitySummary").textContent = counts ? `快照 ${result.exportedAt?.slice(0, 10)} · 企业 ${companies?.total ?? "—"} 家（自动 ${companies?.auto ?? "—"} / 半自动 ${companies?.assisted ?? "—"}，两类重叠 ${companies?.mixed ?? "—"}） · 岗位：自动 ${counts.auto} / 半自动 ${counts.assisted} · 登录未知 ${counts.unverified} · 暂不可用 ${counts.unavailable}` : "";
   $("jobs").replaceChildren();
   for (const job of result.items) {
     const div = element("div", "", "job");
