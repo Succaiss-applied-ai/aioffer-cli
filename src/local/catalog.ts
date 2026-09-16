@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
+import { jobCapability, type CapabilityFilter } from "./job-capability.js";
 export interface LocalJob {
   jobId: string;
   companyName: string;
@@ -11,6 +12,17 @@ export interface LocalJob {
   tags: string[];
   salary: string;
   verifiedAt: string | null;
+  sourceJobId?: string;
+  availability?: "active" | "unavailable";
+  loginRequirement?: {
+    status: "required" | "not_required" | "unknown";
+    scope: string;
+    verificationMethod: string;
+    verifiedAt: string;
+    evidenceUrl: string;
+  };
+  deliveryEvidence?: { successfulOn: string; latestStatus: string; latestOn: string };
+
 }
 export interface Catalog {
   total: number;
@@ -33,10 +45,15 @@ export function searchCatalog(
   city = "",
   offset = 0,
   limit = 30,
+  capability: CapabilityFilter = "all",
 ) {
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const items = catalog.items.filter(
+  const candidates = catalog.items.map(x => ({ ...x, capability: jobCapability(x) }));
+  const counts = { auto: 0, assisted: 0, unverified: 0, unavailable: 0 };
+  for (const x of candidates) counts[x.capability.kind]++;
+  const items = candidates.filter(
     (x) =>
+      (capability === "all" || (capability === "actionable" ? x.capability.allowedModes.length > 0 : x.capability.kind === capability)) &&
       (!city || x.locations.some((c) => c.includes(city))) &&
       terms.every((t) =>
         `${x.title} ${x.companyName} ${x.description}`
@@ -46,6 +63,7 @@ export function searchCatalog(
   );
   return {
     total: items.length,
+    capabilityCounts: counts,
     snapshotTotal: catalog.total,
     exportedAt: catalog.exportedAt,
     items: items.slice(offset, offset + limit),

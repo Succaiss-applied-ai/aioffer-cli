@@ -10,7 +10,7 @@ const cleanup: Array<() => Promise<unknown>> = [];
 afterEach(async () => {
   for (const fn of cleanup.splice(0).reverse()) await fn();
 });
-async function fixture() {
+async function fixture(patch: Partial<import("./catalog.js").LocalJob> = {}) {
   const dir = await mkdtemp(join(tmpdir(), "aioffer-cli-test-"));
   cleanup.push(() => rm(dir, { recursive: true, force: true }));
   const local = await createLocalApp({
@@ -24,13 +24,16 @@ async function fixture() {
           jobId: "test-job",
           companyName: "示例公司",
           title: "工程师",
-          applicationUrl: "https://example.com/jobs/1",
+          applicationUrl: "https://app.mokahr.com/social-recruitment/fixture/1#/job/abc/apply",
+          availability: "active",
+          loginRequirement: { status: "not_required", scope: "job", verificationMethod: "form_observation", verifiedAt: "2026-09-15T00:00:00Z", evidenceUrl: "https://example.com/evidence" },
           locations: ["上海"],
           description: "软件开发",
           channel: "官网",
           tags: [],
           salary: "",
           verifiedAt: null,
+          ...patch,
         },
       ],
     },
@@ -300,4 +303,27 @@ describe("本地服务安全边界", () => {
     ])
       expect((await request(path, {})).status).toBe(403);
   });
+});
+
+it.each([
+  { availability: "unavailable" as const },
+  { availability: undefined, loginRequirement: undefined },
+  { loginRequirement: undefined },
+])("服务端拒绝无能力岗位，伪造客户端标记也不创建任务：%j", async (patch) => {
+  const { local, request } = await fixture(patch);
+  const list = await (await request("/api/jobs")).json();
+  expect(list.total).toBe(0);
+  const all = await (await request("/api/jobs?capability=all")).json();
+  expect(all.total).toBe(1);
+  expect(all.items[0].capability.allowedModes).toEqual([]);
+  await request("/api/config", { model: { provider: "compatible", baseUrl: "http://127.0.0.1:29999/v1", model: "fake-vision", apiKey: "test-only" } });
+  await local.sidecar.devices.register({ tenantId: "local", userId: "local-user", deviceId: "fixture", pluginInstalled: true, pluginVersion: "1.0.12", capabilities: ["batch_auto_apply.v1", "account_logout_fence.v1", "aioffer.local-runtime.v1"] });
+  const version = makeVersion({ schemaVersion: "candidate-profile.v1", basic: { fullName: "合成用户" } }, []);
+  version.confirmedAt = new Date().toISOString();await local.store.write("resumes", [version]);
+  const body = { idempotencyKey: randomUUID(), mode: "assisted", deviceId: "fixture", versionId: version.id, jobIds: ["test-job"], confirmedByUser: true, capability: { kind: "auto", allowedModes: ["auto", "assisted"] } };
+  expect((await request("/api/preview", body)).status).toBe(409);
+  const denied = await request("/api/attempts", body);
+  expect(denied.status).toBe(409);
+  expect(await denied.text()).toContain("不可使用半自动模式");
+  expect(await local.store.read("attempts", [])).toEqual([]);
 });

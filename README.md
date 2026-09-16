@@ -34,11 +34,54 @@
 
 ## 你可以用它做什么
 
-- **先找岗位**：内置 **25,553 条岗位快照**，按岗位、公司、技能搜索，按城市筛选。离线可查；岗位是否仍开放，以官网为准。[快照来源与校验](data/manifest.json)
+- **先找岗位**：内置 **29,627 条岗位快照**，按岗位、公司、技能搜索，按城市筛选。离线可查；岗位是否仍开放，以官网为准。[快照来源与校验](data/manifest.json)
 - **简历只整理一次**：支持 PDF、DOCX、TXT、Markdown；解析后核对结构化资料，保存已确认版本供后续任务使用。当前资料编辑使用 JSON 编辑器。
 - **在原招聘网页填写**：通过 Chrome 插件上传附件、填写已有事实，复用 AI Offer 的站点驱动；遇到登录、验证码或资料缺失，需要你接手。
 - **自由选择提交方式**：半自动逐岗确认最终提交；自动模式在你授权后处理所选批次。两种模式使用同一执行器。
 - **保留本地记录与控制权**：配置、资料版本、任务记录保存在本机；结果不明确时不自动重投。停止任务不能撤回已经提交的申请。
+
+<!-- delivery-catalog:start -->
+## 哪些岗位可以自动或半自动投递
+
+快照日期：**2026-09-16**。工作台默认只显示下列有依据的候选；分类、数量与完整清单由同一份岗位快照自动生成。
+
+| 清单 | 岗位数 | 当前依据与使用方式 |
+| --- | ---: | --- |
+| 自动投递候选 | **82** | 免登录入口已核验 + 专用适配器；可选自动或半自动，完整投递仍待本 CLI 实测 |
+| 半自动投递候选 | **7** | 来源系统有该岗位成功记录；本人处理登录等环节，逐岗核对最终提交 |
+| 能力待验证 | 27,207 | 登录状态或通用网页支持不能证明可投递，暂不开放任务 |
+| 暂不可投递 | 2,331 | 已不在最新公开有效快照中，保留旧 ID 和记录，不创建新任务 |
+
+**候选不是已验证成功保证。** 来源系统历史结果不等于本 CLI 已逐岗验收；“免登录”不等于完整自动投递，“需登录”也不等于已支持半自动。最终以招聘网站回执为准。
+
+<details>
+<summary><strong>展开半自动候选岗位（7 条，有来源成功记录）</strong></summary>
+
+| 企业 | 岗位申请页 | 城市 | 依据日期 |
+| --- | --- | --- | --- |
+| 达美乐中国 | [学生见习经理（柳州）](<https://app.mokahr.com/campus-recruitment/dominos/118054#/job/f01ffc1d-f1e8-47eb-9980-5303a25c1e0d/apply>) | 柳州市 | 2026-09-04 |
+| 巨人网络-美术类岗位 | [高级U3D开发工程师(Super Sus)](<https://app.mokahr.com/social-recruitment/ztgame/37485#/job/f89b2c13-fdbd-4b14-a0dd-aace3cd2b562/apply>) | 上海市 | 2026-09-09 |
+| 巨人网络-美术类岗位 | [数据开发工程师](<https://app.mokahr.com/social-recruitment/ztgame/37485#/job/d51afb64-0a60-4e22-87b2-ec4e01ad0b4e/apply>) | 上海市 | 2026-09-16 |
+| 理想汽车 | [后端开发工程师](<https://li.jobs.feishu.cn/index/position/detail/7529456369926605082>) | 北京市 | 2026-09-14 |
+| 智谱 | [26届春招-训练Infra工程师](<https://app.mokahr.com/campus-recruitment/zphz/148984#/job/cffc150f-8592-4b57-b9fe-6f87312958be/apply>) | 北京市 | 2026-09-10 |
+| 作业帮 | [HRBP\[郑州\]-27秋招](<https://app.mokahr.com/campus-recruitment/zuoyebang/144908#/job/fefe06bf-1330-4b54-99bb-04789ce1f11c/apply>) | 郑州市 | 2026-09-10 |
+| OCS灿瑞科技 | [应用工程师](<https://app.mokahr.com/campus-recruitment/canrui/42687#/job/e2a10ab2-4ada-463f-b775-2c884a93f88f/apply>) | 上海市 | 2026-09-04 |
+
+</details>
+
+<details>
+<summary><strong>展开自动候选企业与依据（82 条）</strong></summary>
+
+| 企业 | 岗位数 | 依据 |
+| --- | ---: | --- |
+| 海目星激光 | 82 | 免登录流程核验 + 专用适配；完整岗位与申请链接见下方清单 |
+
+</details>
+
+**[查看完整候选清单和每个岗位的申请链接 →](docs/job-list.md)** · [查看快照数量与校验](data/manifest.json)
+
+启动后在「选择岗位 → 投递能力」筛选；也可运行 `node dist/local/cli.js jobs --capability auto` 或 `--capability assisted`，用 `--offset 30` 翻页。
+<!-- delivery-catalog:end -->
 
 ## 快速开始
 

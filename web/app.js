@@ -274,7 +274,7 @@ function selection() {
 }
 let searchRequest = 0;
 let searchPending = false;
-let displayedQuery = "", displayedCity = "";
+let displayedQuery = "", displayedCity = "", displayedCapability = "";
 const previousDisabled = () => searchPending || offset === 0;
 const nextDisabled = () => searchPending || offset + 30 >= total;
 function updatePagination() {
@@ -284,18 +284,20 @@ function updatePagination() {
 async function search(requestedOffset = offset) {
   const request = ++searchRequest;
   const query = $("query").value, city = $("city").value;
-  if (query !== displayedQuery || city !== displayedCity) requestedOffset = 0;
+  const capability = $("capability").value;
+  if (query !== displayedQuery || city !== displayedCity || capability !== displayedCapability) requestedOffset = 0;
   searchPending = true;
   updatePagination();
   try {
     const result = await api(
-      `/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}`,
+      `/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}&capability=${encodeURIComponent(capability)}`,
     );
     // 仅最新成功响应可以替换列表和页码；失败不消耗当前页。
     if (request !== searchRequest) return;
     offset = requestedOffset;
     displayedQuery = query;
     displayedCity = city;
+    displayedCapability = capability;
     renderJobs(result);
   } catch (error) {
     if (request === searchRequest) throw error;
@@ -310,6 +312,8 @@ function renderJobs(result) {
   total = result.total;
   $("jobCount").textContent =
     `找到 ${total} 个 · 当前 ${total ? offset + 1 : 0}–${Math.min(offset + 30, total)}`;
+  const counts = result.capabilityCounts;
+  $("capabilitySummary").textContent = counts ? `快照 ${result.exportedAt?.slice(0, 10)} · 自动候选 ${counts.auto} · 半自动候选 ${counts.assisted} · 待验证 ${counts.unverified} · 暂不可用 ${counts.unavailable}` : "";
   $("jobs").replaceChildren();
   for (const job of result.items) {
     const div = element("div", "", "job");
@@ -317,6 +321,7 @@ function renderJobs(result) {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = selected.has(job.jobId);
+    checkbox.disabled = !job.capability?.allowedModes?.length;
     checkbox.onchange = () => {
       checkbox.checked
         ? selected.set(job.jobId, job)
@@ -330,6 +335,9 @@ function renderJobs(result) {
     div.append(
       label,
       element("p", `${job.locations.join("、")} ${job.salary}`),
+      element("p", `${job.capability?.label || "能力待验证"}：${job.capability?.reason || "缺少能力证据，不能发起任务"}`),
+      ...(job.loginRequirement?.verifiedAt ? [element("p", `登录要求：${job.loginRequirement.status === "not_required" ? "免登录" : job.loginRequirement.status === "required" ? "需要本人登录" : "未知"} · 核验日期 ${job.loginRequirement.verifiedAt.slice(0, 10)}`)] : []),
+      ...(job.deliveryEvidence?.successfulOn ? [element("p", `来源系统曾成功：${job.deliveryEvidence.successfulOn} · 本 CLI 尚未逐岗复验`)] : []),
       link("查看企业投递页面", job.applicationUrl),
     );
     const detail = document.createElement("details");
@@ -348,6 +356,7 @@ bind(
   },
   "submit",
 );
+bind("capability", () => search(0), "change");
 bind("previous", () => search(Math.max(0, offset - 30)), "click", previousDisabled);
 bind("next", () => search(offset + 30 < total ? offset + 30 : offset), "click", nextDisabled);
 bind("clearSelection", async () => {
@@ -385,7 +394,7 @@ bind("preview", async () => {
     ...result.jobs.map((j) =>
       element(
         "p",
-        `${j.companyName} / ${j.title} · ${j.support.supported ? "支持投递" : "暂不支持此站点，将跳过"}`,
+        `${j.companyName} / ${j.title} · ${j.capability?.label || "能力待验证"}：${j.capability?.reason || "缺少能力证据"}`,
       ),
     ),
   );

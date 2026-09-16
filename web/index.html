@@ -112,9 +112,17 @@
       <section>
         <h2>3 · 选择岗位</h2>
         <p>
-          内置岗位快照不会自动更新，岗位可能已下线；以企业官网当前信息为准。
+          默认仅列出有依据的候选岗位。免登录核验和来源成功记录不等于本 CLI 已逐岗验收；快照不会自动更新，以官网为准。
         </p>
         <form id="search">
+          <label>投递能力<select id="capability">
+            <option value="actionable">有依据的自动 / 半自动候选</option>
+            <option value="auto">自动投递候选（免登录 + 专用适配）</option>
+            <option value="assisted">半自动投递候选（来源成功记录）</option>
+            <option value="unverified">能力待验证（不能发起任务）</option>
+            <option value="unavailable">暂不可投递</option>
+            <option value="all">全部岗位</option>
+          </select></label>
           <div class="row">
             <input id="query" placeholder="岗位 / 公司 / 技能" /><input
               id="city"
@@ -126,6 +134,7 @@
           <span id="jobCount"></span><span id="selectionCount">已选 0 个</span
           ><button id="clearSelection" class="secondary">清空选择</button>
         </div>
+        <p id="capabilitySummary"></p>
         <div id="jobs"></div>
         <div class="row">
           <button id="previous" class="secondary">上一页</button
