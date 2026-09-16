@@ -25,6 +25,7 @@ import {
   type ModelConfig,
 } from "./providers.js";
 import { LocalStore } from "./store.js";
+import { canRetryLogin } from "./retry-policy.js";
 import { loadCatalog, searchCatalog, type Catalog } from "./catalog.js";
 import { parseMineru } from "./mineru.js";
 import { testVisionModel } from "./vision-probe.js";
@@ -63,6 +64,7 @@ const attemptInput = z.object({
   confirmedByUser: z.literal(true),
   allowAutomaticFinalSubmit: z.boolean().default(false),
   allowConsentClick: z.boolean().default(false),
+  retryOf: z.string().uuid().optional(),
 });
 function sameSecret(left: string, right: string) {
   const a = Buffer.from(left),
@@ -421,13 +423,28 @@ export async function createLocalApp(options: {
           throw Error("幂等键与原请求不一致");
         return existing;
       }
-      const overlap = attempts.find((x) =>
+      const overlaps = attempts.filter((x) =>
         x.jobIds.some((id) => input.jobIds.includes(id)),
       );
-      if (overlap)
+      if (overlaps.length && !input.retryOf)
         throw Error(
           "该岗位已有投递记录，请先在记录中处理原任务，不能跨模式重复投递",
         );
+      if (input.retryOf) {
+        const source = attempts.find(x => x.id === input.retryOf);
+        const original = attemptInput.safeParse(source?.payload);
+        if (!source || !original.success || input.jobIds.length !== 1 ||
+            !source.jobIds.includes(input.jobIds[0]!) || source.mode !== input.mode ||
+            source.deviceId !== input.deviceId || source.versionId !== input.versionId ||
+            original.data.allowConsentClick !== input.allowConsentClick)
+          throw Error("重试必须使用原任务的岗位、设备、资料和权限，请从投递记录重新确认");
+        for (const previous of overlaps) {
+          const batch = previous.batchId ? await sidecar.autoApply.get(previous.batchId, owner) : null;
+          const job = batch?.jobs.find(x => x.jobId === input.jobIds[0]);
+          if (!batch || !job || !canRetryLogin(batch, job))
+            throw Error("该岗位不是明确的提交前登录失败，或已有后续尝试；为避免重复提交不能重试");
+        }
+      }
       const device = await requireReadyDevice(
         sidecar.devices,
         owner.tenantId,
@@ -511,16 +528,19 @@ export async function createLocalApp(options: {
     const attempts = await store.read<Attempt[]>("attempts", []);
     res.json(
       await Promise.all(
-        attempts.map(async (attempt) => ({
+        attempts.map(async (attempt) => {
+          const batch = attempt.batchId ? await sidecar.autoApply.get(attempt.batchId, owner) : null;
+          return ({
           ...attempt,
           payload: undefined,
-          batch: attempt.batchId
-            ? await sidecar.autoApply.get(attempt.batchId, owner)
-            : null,
+          batch,
+          retryableLoginJobIds: batch ? batch.jobs.filter(job => canRetryLogin(batch, job) &&
+            !attempts.slice(attempts.indexOf(attempt) + 1).some(x => x.jobIds.includes(job.jobId)))
+            .map(job => job.jobId) : [],
           runs: await Promise.all(
             attempt.runIds.map((id) => sidecar.gateway.get(id)),
           ),
-        })),
+        }); }),
       ),
     );
   });

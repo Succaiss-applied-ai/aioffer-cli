@@ -1,4 +1,5 @@
 import { assertLocalPlugin } from "./plugin-compatibility.js";
+import { finalReviewNotice } from "./review-notice.js";
 const $ = (id) => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
 if (fragment.has("token")) {
@@ -423,8 +424,14 @@ const labels = {
   verifying: "核对回执",
   skipped_unsupported_site: "暂不支持该站点",
 };
+let attemptsSnapshot = null;
+let attemptsRequest = 0;
 async function refreshAttempts() {
+  const request = ++attemptsRequest;
   const attempts = await api("/api/attempts");
+  const snapshot = JSON.stringify(attempts);
+  // 无变化时保留原控件、用户勾选和焦点；丢弃晚到的旧请求。
+  if (request !== attemptsRequest || snapshot === attemptsSnapshot) return;
   $("attempts").replaceChildren();
   for (const attempt of attempts.reverse()) {
     const div = element("div", "", "attempt");
@@ -463,12 +470,34 @@ async function refreshAttempts() {
         element("strong", `${job.companyName} · ${job.title}`),
         element(
           "p",
-          `${labels[job.status] || job.status} · ${job.progress?.message || job.evidence?.diagnostic?.userMessage || job.evidence?.siteConfirmation || job.reasonCode || ""}`,
+          `${labels[job.status] || job.status} · ${job.evidence?.diagnostic?.userMessage || job.evidence?.siteConfirmation || job.progress?.message || job.reasonCode || ""}`,
         ),
       );
       if (job.evidence?.pageUrl)
         item.append(link("查看招聘页面", job.evidence.pageUrl));
       const jp = `${path}/jobs/${job.batchJobId}`;
+      if (attempt.retryableLoginJobIds?.includes(job.jobId)) {
+        const label = element("label", "", "check");
+        const consent = document.createElement("input");
+        consent.type = "checkbox";
+        label.append(consent, document.createTextNode(attempt.mode === "auto"
+          ? "我已完成登录，确认用原资料重试此岗位，并重新授权自动最终提交"
+          : "我已完成登录，确认用原资料重试此岗位；最终提交仍需另行确认"));
+        const retryKey = crypto.randomUUID();
+        item.append(label, action("登录完成，重新尝试此岗位", async () => {
+          if (!consent.checked) throw Error("请先勾选此岗位的重试确认");
+          const next = await api("/api/attempts", {
+            idempotencyKey: retryKey, retryOf: attempt.id,
+            mode: attempt.mode, deviceId: attempt.deviceId, versionId: attempt.versionId,
+            jobIds: [job.jobId], confirmedByUser: true,
+            allowAutomaticFinalSubmit: attempt.mode === "auto",
+            allowConsentClick: batch.safety.allowConsentClick,
+          });
+          await bridge("RECRUITING_AUTO_APPLY_WAKE", {
+            deviceId: attempt.deviceId, batchId: next.batchId,
+          }).catch(() => notice("重试任务已保存在本机，等待插件领取；请勿重复创建。"));
+        }));
+      }
       if (
         job.status === "waiting_for_user_action" &&
         job.reasonCode === "final_review_required"
@@ -476,7 +505,7 @@ async function refreshAttempts() {
         item.append(
           element(
             "p",
-            "请切换到插件已打开的原招聘标签页，核对所有资料。下方按钮会触发真实提交。",
+            finalReviewNotice(job),
           ),
           action("已核对原页面，确认最终投递", () =>
             api(
@@ -555,6 +584,7 @@ async function refreshAttempts() {
     $("attempts").append(div);
   }
   if (!attempts.length) $("attempts").append(element("p", "还没有投递记录。"));
+  attemptsSnapshot = snapshot;
 }
 bind("refresh", refreshAttempts);
 try {

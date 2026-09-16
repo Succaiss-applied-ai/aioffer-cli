@@ -455,6 +455,7 @@ export class AutoApplyService {
         status: adapter.supported ? "queued" : "skipped_unsupported_site",
         attempt: 0,
         commandId: null,
+        ...(input.tenantId === "local" ? { localSubmitAuthorizedAt: null } : {}),
         reasonCode: adapter.supported ? null : adapter.reason,
         createdAt: timestamp,
         startedAt: null,
@@ -1542,6 +1543,14 @@ export class AutoApplyService {
       deviceId: string;
     }
   ): Promise<SubmissionAuthorizationVerification> {
+    return this.serializeOwner(this.ownerKey(expected.tenantId, expected.userId),
+      () => this.verifySubmissionAuthorizationSerialized(token, expected));
+  }
+
+  private async verifySubmissionAuthorizationSerialized(
+    token: string,
+    expected: { batchId: string; batchJobId: string; commandId: string; tenantId: string; userId: string; deviceId: string }
+  ): Promise<SubmissionAuthorizationVerification> {
     try {
       const [encoded, signature] = token.split(".");
       if (!encoded || !signature) throw new Error("malformed_token");
@@ -1572,6 +1581,14 @@ export class AutoApplyService {
       const executionExpiresAt = Date.parse(command.executionExpiresAt ?? command.command.expiresAt);
       if (executionExpiresAt - this.now().getTime() < minimumAutoApplySubmissionWindowMs) {
         throw new Error("insufficient_execution_window");
+      }
+      // 返回点击许可之前落盘。已发许可即使没有回执，也不允许本地重建投递。
+      if (batch.tenantId === "local" && !job.localSubmitAuthorizedAt) {
+        await this.batches.save({ ...batch,
+          jobs: batch.jobs.map(item => item.batchJobId === job.batchJobId
+            ? { ...item, localSubmitAuthorizedAt: this.now().toISOString() } : item),
+          revision: batch.revision + 1, updatedAt: this.now().toISOString()
+        });
       }
       return { valid: true, batchId: claims.batchId, batchJobId: claims.batchJobId, reason: null };
     } catch (error) {

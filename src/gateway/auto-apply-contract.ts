@@ -369,6 +369,8 @@ export const autoApplyJobResultSchema = z.object({
 });
 
 export interface AutoApplyBatchJob {
+  /** 本地实例：null 表示从未授权最终点击；缺失表示旧数据，不能据此推断。 */
+  localSubmitAuthorizedAt?: string | null;
   /** 本地半自动模式：仅批准当前回读哈希，不能批准变更后的页面。 */
   localReviewApproval?: { reviewHash: string; confirmedAt: string; expiresAt: string };
   candidateProfile?: z.infer<typeof candidateApplicationProfileSchema>;
