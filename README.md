@@ -176,6 +176,20 @@ pnpm start
 
 正在求职、研究浏览器自动化，或者想让某个招聘官网更好用？欢迎一起把它打磨好。
 
+### 微信交流与反馈
+
+欢迎加入 **aioffer-cli 沟通反馈4群**，交流安装配置、官网适配、使用问题和功能建议。使用微信或企业微信扫描下方二维码即可进入入群流程。
+
+<p align="center">
+  <img src="docs/assets/wecom-group-4.jpg" alt="aioffer-cli 沟通反馈4群长期入群二维码，使用微信或企业微信扫码" width="280">
+</p>
+
+> 使用企业微信「加入群聊」生成的长期活码。若群满或无法加入，请[提交 Issue 反馈入群问题](https://github.com/Succaiss-applied-ai/aioffer-cli/issues/new?title=%E7%A4%BE%E7%BE%A4%E5%85%A5%E7%BE%A4%E9%97%AE%E9%A2%98)，我们会核实并维护入口。无需公开你的手机号或微信号。
+
+### 问题反馈与贡献
+
+加群不是使用门槛；需要跟踪修复进度的问题，欢迎同时提交 Issue。
+
 - **使用问题 / Bug**：[提交 Issue](https://github.com/Succaiss-applied-ai/aioffer-cli/issues/new)，附系统、插件版本、招聘平台和脱敏复现步骤。
 - **希望支持的站点 / 功能**：[在 Issues 里讨论](https://github.com/Succaiss-applied-ai/aioffer-cli/issues)，说明遇到了什么表单、预期怎样处理。
 - **贡献代码 / 教程**：从 [贡献指南](CONTRIBUTING.md) 开始；补充站点适配、回归测试和中文文档都很有帮助。
