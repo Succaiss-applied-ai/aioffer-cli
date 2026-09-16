@@ -30,6 +30,14 @@ assert(
 const server = await read("src/local/server.ts");
 assert(!server.includes("autoApplyCallbackSecrets:"), "本地运行不配置云端回调");
 assert(!server.includes("database:"), "本地运行不依赖数据库服务");
+const webIndex = await read("web/index.html");
+assert(webIndex.includes('href="/dist/antd.css"') && webIndex.includes('href="/dist/app.css"') &&
+  webIndex.includes('src="/dist/app.js"'), "本地工作台必须只加载构建后的同源资源");
+for (const file of ["web/dist/app.js", "web/dist/app.css", "web/dist/antd.css"]) {
+  assert(!(await read(file)).includes("sourceMappingURL="), `本地工作台产物不得包含 source map 引用：${file}`);
+}
+assert((await read("web/dist/app.js")).includes("https://aioffer.succaiss.com/"),
+  "本地工作台必须包含指定 aioffer 品牌链接");
 const bytes = await readFile("data/jobs.json.gz");
 const metadata = JSON.parse(await read("data/manifest.json"));
 assert.equal(createHash("sha256").update(bytes).digest("hex"), metadata.sha256);
