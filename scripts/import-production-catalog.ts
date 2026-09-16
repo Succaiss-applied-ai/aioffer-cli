@@ -2,7 +2,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
-import { jobCapability } from "../src/local/job-capability.js";
+import { jobCapability, companyCoverage } from "../src/local/job-capability.js";
 import type { LocalJob, Catalog } from "../src/local/catalog.js";
 const raw = JSON.parse(await readFile(process.argv[2]!, "utf8"));
 if (!raw.queriedAt || !Number.isFinite(Date.parse(raw.queriedAt)) || !Array.isArray(raw.jobs) || !raw.jobs.length ||
@@ -41,5 +41,5 @@ const counts = { auto: 0, assisted: 0, unverified: 0, unavailable: 0 };
 for (const job of items) counts[jobCapability(job).kind]++;
 const bytes = gzipSync(JSON.stringify({ schemaVersion: "aioffer-local-catalog.v2", total: items.length, exportedAt: raw.queriedAt, items }),{level:9});
 await writeFile("data/jobs.json.gz",bytes);
-await writeFile("data/manifest.json",JSON.stringify({schemaVersion:"aioffer-local-catalog.v2",total:items.length,activeTotal:raw.jobs.length,exportedAt:raw.queriedAt,sha256:createHash("sha256").update(bytes).digest("hex"),source:"AI Offer 公开岗位快照及匿名岗位能力摘要",capabilityCounts:counts,note:"自动/半自动候选按证据筛选；来源系统记录不等于本 CLI 逐岗验收；快照不自动更新。"},null,2)+"\n");
+await writeFile("data/manifest.json",JSON.stringify({schemaVersion:"aioffer-local-catalog.v2",total:items.length,activeTotal:raw.jobs.length,exportedAt:raw.queriedAt,sha256:createHash("sha256").update(bytes).digest("hex"),source:"AI Offer 公开岗位快照及匿名岗位能力摘要",capabilityCounts:counts,companyCounts:companyCoverage(items).counts,note:"按生产登录状态区分免登录自动与需登录半自动；企业按名称去重，两类可重叠；非逐站成功保证，快照不自动更新。"},null,2)+"\n");
 console.log(JSON.stringify({total:items.length,active:raw.jobs.length,counts}));

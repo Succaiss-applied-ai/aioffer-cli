@@ -6,10 +6,16 @@
   "sha256": "9086a6f451e81d69e6ad0655512cd53018831edebf1ed8d174511d204c5e90cc",
   "source": "AI Offer 公开岗位快照及匿名岗位能力摘要",
   "capabilityCounts": {
-    "auto": 82,
-    "assisted": 7,
-    "unverified": 27207,
+    "auto": 86,
+    "assisted": 27210,
+    "unverified": 0,
     "unavailable": 2331
   },
-  "note": "自动/半自动候选按证据筛选；来源系统记录不等于本 CLI 逐岗验收；快照不自动更新。"
+  "companyCounts": {
+    "total": 464,
+    "auto": 4,
+    "assisted": 461,
+    "mixed": 1
+  },
+  "note": "按生产登录状态区分免登录自动与需登录半自动；企业按名称去重，两类可重叠；非逐站成功保证，快照不自动更新。"
 }

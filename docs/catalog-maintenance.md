@@ -1,6 +1,6 @@
 # 维护岗位投递能力
 
-用户运行 CLI 只读本地快照。维护者取得授权的公开有效岗位导出后，在仓库根目录导入；不在客户端连接生产数据库。README 选择能力概览、可折叠小清单、完整列表链接，避免把数万条未验证岗位混入“能投递”清单。
+用户运行 CLI 只读本地快照。维护者取得授权的公开有效岗位导出后，在仓库根目录导入；不在客户端连接生产数据库。README 选择能力概览、可折叠小清单、完整列表链接，企业按来源名称去重，官网入口保留原始投递链接；同企业跨登录状态时分别计数并标明重叠。
 
 ## 输入契约
 
@@ -27,6 +27,8 @@ pnpm build
 pnpm check:cloud
 ```
 
-`data/manifest.json` 保存当前快照时间、总数、有效岗位数、能力数量和 SHA-256。完整候选清单在 `docs/job-list.md`；README 与此清单由同一生成器更新，CI 检测漂移。
+`data/manifest.json` 保存当前快照时间、总数、有效岗位数、能力数量和 SHA-256。完整企业清单在 `docs/company-list.md`；README 与此清单由同一生成器更新，CI 检测漂移。
 
-自动与半自动是任务权限，免登录与需登录是网站入口要求，来源系统历史成功是另一条证据。当前“候选”规则是保守准入规则，不是逐岗成功率承诺。后续真实 CLI 验收应记录受测岗位、版本、日期、填写/人工交接/最终回执范围，不能只凭通用适配器 supported=true 提升能力。
+自动与半自动是任务权限，免登录与需登录是网站入口要求，来源系统历史成功是另一条证据。分类直接使用 `jobPosting.application.loginRequirement.status`：`not_required` 对应上游 `auto_apply`；`required` 对应上游 `login_required`，CLI 展示为“半自动／需本人登录”。不要求历史成功记录、特定适配器或特定核验方法才允许创建任务。未知状态不猜测，失效岗位仍禁止新任务。后续真实 CLI 验收应记录受测岗位、版本、日期、填写/人工交接/最终回执范围，不得把入口分类写成逐站成功率保证。
+
+企业汇总使用来源企业名称原值，不擅自将集团、子公司、事业部合并；这不是工商主体数量。`companyCounts.total` 为去重企业数，`auto`、`assisted` 可重叠，`mixed` 为交集；岗位计数在 `capabilityCounts` 中。生产筛选依据来自 `aioffer_position.job_postings` 的 PUBLIC、ACTIVE、REAL、applicationAllowed=true 记录；源代码的 `internal/jobposting/transporthttp/handler.go` 定义上述筛选映射。

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
-import { jobCapability, type CapabilityFilter } from "./job-capability.js";
+import { jobCapability, companyCoverage, type CapabilityFilter } from "./job-capability.js";
 export interface LocalJob {
   jobId: string;
   companyName: string;
@@ -64,6 +64,7 @@ export function searchCatalog(
   return {
     total: items.length,
     capabilityCounts: counts,
+    companyCounts: companyCoverage(catalog.items).counts,
     snapshotTotal: catalog.total,
     exportedAt: catalog.exportedAt,
     items: items.slice(offset, offset + limit),

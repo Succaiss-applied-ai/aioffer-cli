@@ -1,88 +1,81 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { loadCatalog } from "../src/local/catalog.js";
-import { jobCapability } from "../src/local/job-capability.js";
+import { jobCapability, companyCoverage } from "../src/local/job-capability.js";
 const catalog = await loadCatalog("data/jobs.json.gz");
-const groups = {auto: [] as typeof catalog.items, assisted: [] as typeof catalog.items, unverified: [] as typeof catalog.items, unavailable: [] as typeof catalog.items};
-for (const j of catalog.items) groups[jobCapability(j).kind].push(j);
-for (const jobs of Object.values(groups)) jobs.sort((a,b) => a.companyName.localeCompare(b.companyName,"zh-CN") || a.title.localeCompare(b.title,"zh-CN"));
-const text = (s: string) => s.replace(/[\r\n]+/g," ").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/[\\|\[\]*_`]/g,"\\$&");
-const link = (j: typeof catalog.items[number]) => `[${text(j.title)}](<${j.applicationUrl.replace(/[<>\r\n]/g,c=>encodeURIComponent(c))}>)`;
-const table = (jobs: typeof catalog.items) => ["| 企业 | 岗位申请页 | 城市 | 依据日期 |", "| --- | --- | --- | --- |", ...jobs.map(j=>`| ${text(j.companyName)} | ${link(j)} | ${text(j.locations.join("、") || "未标注")} | ${(j.deliveryEvidence?.successfulOn || j.loginRequirement?.verifiedAt || "").slice(0,10)} |`)].join("\n");
+const { counts, companies } = companyCoverage(catalog.items);
+const auto = companies.filter(c=>c.autoJobs>0), assisted = companies.filter(c=>c.assistedJobs>0);
+const jobCounts = {auto:0,assisted:0,unverified:0,unavailable:0};
+for(const j of catalog.items) jobCounts[jobCapability(j).kind]++;
+const text = (s:string) => s.replace(/[\r\n]+/g," ").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/[\\|\[\]*_`]/g,"\\$&");
+const safeLink = (url:string) => url.replace(/[<>\r\n|]/g,c=>encodeURIComponent(c));
+function table(rows:typeof companies, mode?:"auto"|"assisted") {
+ return ["| 企业（来源名称） | 投递方式 | 免登录岗位 | 需登录岗位 | 官网 / ATS / 来源投递入口 |","| --- | --- | ---: | ---: | --- |",...rows.map(c=>{
+ const modes=[...(c.autoJobs?["自动（免登录）"]:[]),...(c.assistedJobs?["半自动（需本人登录）"]:[])].join("、");
+ const entries=c.entries.filter(e=>!mode||e.kind===mode).map((e,i)=>`[${e.kind==="auto"?"免登录":"需登录"}：${text(new URL(e.url).hostname)} ${i+1}](<${safeLink(e.url)}>)`).join(" · ");
+ return `| ${text(c.companyName)} | ${modes} | ${c.autoJobs} | ${c.assistedJobs} | ${entries} |`;
+ })].join("\n");
+}
+const explanation = `按 **AI Offer 生产数据库**的公开有效、允许申请记录汇总，企业按来源企业名称去重；同一企业的校招、社招入口可有不同登录要求。链接保留源数据中的真实投递页，不猜测或改写为网站首页；个别源记录指向牛客等第三方招聘平台，表中显示实际域名，不将其伪称企业官网。
+
+- **自动 / 免登录**：\`jobPosting.application.loginRequirement.status = not_required\`，对应 AI Offer 的 \`auto_apply\` 筛选。
+- **半自动 / 需本人登录**：原始字段为 \`required\`，对应 AI Offer 的 \`login_required\` 筛选；“半自动”是 CLI 对需要本人登录、再由助手填写并确认提交的展示名称。
+- 企业数与岗位数分开统计：**${counts.total} 个企业名称，${jobCounts.auto+jobCounts.assisted} 个岗位**。自动 ${counts.auto} 家、半自动 ${counts.assisted} 家，重叠 ${counts.mixed} 家（${companies.filter(c=>c.autoJobs>0&&c.assistedJobs>0).map(c=>text(c.companyName)).join("、") || "无"}），不能直接相加。
+
+这是来源数据的投递入口分类，不是 ${counts.total} 家全部完成本 CLI 端到端验收的声明。适配器类型与历史成功记录作为补充信息，**不再作为企业或岗位白名单**。登录、验证码和最终提交仍遵守本人授权与确认；快照不会自动更新。`;
 const overview = `<!-- delivery-catalog:start -->
-## 哪些岗位可以自动或半自动投递
+## 哪些企业官网可以自动或半自动投递
 
-快照日期：**${catalog.exportedAt.slice(0,10)}**。工作台默认只显示下列有依据的候选；分类、数量与完整清单由同一份岗位快照自动生成。
+快照日期：**${catalog.exportedAt.slice(0,10)}**。以下按企业展示，岗位数仅作辅助统计。
 
-| 清单 | 岗位数 | 当前依据与使用方式 |
-| --- | ---: | --- |
-| 自动投递候选 | **${groups.auto.length}** | 免登录入口已核验 + 专用适配器；可选自动或半自动，完整投递仍待本 CLI 实测 |
-| 半自动投递候选 | **${groups.assisted.length}** | 来源系统有该岗位成功记录；本人处理登录等环节，逐岗核对最终提交 |
-| 能力待验证 | ${groups.unverified.length.toLocaleString("en-US")} | 登录状态或通用网页支持不能证明可投递，暂不开放任务 |
-| 暂不可投递 | ${groups.unavailable.length.toLocaleString("en-US")} | 已不在最新公开有效快照中，保留旧 ID 和记录，不创建新任务 |
+| 投递入口分类（按生产数据） | 企业数 | 岗位数 | 使用方式 |
+| --- | ---: | ---: | --- |
+| 自动 / 免登录 | **${counts.auto}** | ${jobCounts.auto.toLocaleString("en-US")} | 原始状态 not_required，可选自动或半自动 |
+| 半自动 / 需本人登录 | **${counts.assisted}** | ${jobCounts.assisted.toLocaleString("en-US")} | 原始状态 required，本人登录、助手填写、逐岗确认提交 |
+| 去重合计 | **${counts.total}** | **${(jobCounts.auto+jobCounts.assisted).toLocaleString("en-US")}** | ${counts.mixed} 家同时有两类入口，企业数不可直接相加 |
 
-**候选不是已验证成功保证。** 来源系统历史结果不等于本 CLI 已逐岗验收；“免登录”不等于完整自动投递，“需登录”也不等于已支持半自动。最终以招聘网站回执为准。
+${explanation}
 
 <details>
-<summary><strong>展开半自动候选岗位（${groups.assisted.length} 条，有来源成功记录）</strong></summary>
+<summary><strong>展开自动投递企业（${counts.auto} 家）</strong></summary>
 
-${table(groups.assisted)}
+${table(auto,"auto")}
 
 </details>
 
 <details>
-<summary><strong>展开自动候选企业与依据（${groups.auto.length} 条）</strong></summary>
+<summary><strong>展开半自动投递企业（${counts.assisted} 家）</strong></summary>
 
-| 企业 | 岗位数 | 依据 |
-| --- | ---: | --- |
-${[...new Set(groups.auto.map(j=>j.companyName))].map(c=>`| ${text(c)} | ${groups.auto.filter(j=>j.companyName===c).length} | 免登录流程核验 + 专用适配；完整岗位与申请链接见下方清单 |`).join("\n")}
+${table(assisted,"assisted")}
 
 </details>
 
-**[查看完整候选清单和每个岗位的申请链接 →](docs/job-list.md)** · [查看快照数量与校验](data/manifest.json)
+**[查看完整企业官网清单 →](docs/company-list.md)** · [数据来源与字段口径](docs/catalog-maintenance.md) · [快照校验](data/manifest.json)
 
-启动后在「选择岗位 → 投递能力」筛选；也可运行 \`node dist/local/cli.js jobs --capability auto\` 或 \`--capability assisted\`，用 \`--offset 30\` 翻页。
+工作台按「投递能力」筛选；命令行使用 \`node dist/local/cli.js jobs --capability auto\` 或 \`--capability assisted\`，用 \`--offset 30\` 翻页。分类覆盖所有相应有效岗位，不要求每个岗位已有历史成功记录。
 <!-- delivery-catalog:end -->`;
 let readme = await readFile("README.md","utf8");
-if (readme.includes("<!-- delivery-catalog:start -->")) readme = readme.replace(/<!-- delivery-catalog:start -->[\s\S]*?<!-- delivery-catalog:end -->/, overview);
-else readme = readme.replace("## 快速开始",overview+"\n\n## 快速开始");
-readme = readme.replace(/内置 \*\*[\d,]+ 条岗位快照\*\*/,`内置 **${catalog.total.toLocaleString("en-US")} 条岗位快照**`);
-const doc = `# 岗位投递候选清单
+readme=readme.replace(/<!-- delivery-catalog:start -->[\s\S]*?<!-- delivery-catalog:end -->/,overview);
+readme=readme.replace(/内置 \*\*[\d,]+ 条岗位快照\*\*/,`内置 **${catalog.total.toLocaleString("en-US")} 条岗位快照**`);
+const doc=`# 企业官网投递清单
 
-快照日期：${catalog.exportedAt.slice(0,10)}。本页由 \`pnpm catalog:docs\` 生成，不手工编辑数量或岗位。
+快照日期：${catalog.exportedAt.slice(0,10)}。本页由 \`pnpm catalog:docs\` 自动生成，与 README、工作台使用同一分类规则。
 
-[返回 README](../README.md#哪些岗位可以自动或半自动投递) · [快照元信息](../data/manifest.json)
+[返回 README](../README.md#哪些企业官网可以自动或半自动投递) · [维护与字段口径](catalog-maintenance.md)
 
-## 分类规则
+${explanation}
 
-- **自动候选（${groups.auto.length}）**：公开有效岗位，来源免登录核验含范围、方法、日期、公开证据地址，且命中本 CLI 专用适配器。允许自动和半自动；未宣称完成本 CLI 逐岗提交验收。
-- **半自动候选（${groups.assisted.length}）**：公开有效岗位，来源系统存在同一岗位、同一申请地址的成功结果。要求本人处理登录、验证码等环节并确认最终提交；不从历史结果推断全程无人介入。
-- **待验证（${groups.unverified.length}）**：证据不足。包括仅免登录但无专用适配/成功记录、仅需登录、仅命中通用网页执行器等。不可发起投递任务。
-- **暂不可投递（${groups.unavailable.length}）**：旧快照岗位未出现在新的公开有效快照，或地址无效。不可发起新任务。
+## 完整企业清单（${counts.total} 个来源企业名称）
 
-核验可能作用于单岗位、企业或企业来源，不能将企业级入口核验写成每个岗位已经成功。快照离线使用，不自动访问生产服务；重新更新后能力可能变化。
-
-## 半自动候选：来源系统已有成功记录
-
-${table(groups.assisted)}
-
-## 自动候选：免登录 + 专用适配
-
-${table(groups.auto)}
-
-## 维护与更新
-
-维护者在获得授权后取得完整公开有效岗位导出，保留登录要求及其证据，按岗位与原始申请 URL 关联脱敏的成功摘要。不要提交原始批次、用户标识、简历、答案、密钥或内部验收文件。
-
-\`\`\`bash
-node --import tsx scripts/import-production-catalog.ts /absolute/path/authorized-export.json
-pnpm catalog:docs
-pnpm catalog:check
-\`\`\`
-
-输入契约与操作步骤见 [维护者导入说明](catalog-maintenance.md)。导入保留已有 jobId，并将退出有效快照的岗位标记为不可用。工作台和服务端均按同一能力函数检查模式，不能用请求参数绕过限制。所有条目和公开验证依据保存在压缩岗位快照中，CLI 用户不需要数据库账号。
+${table(companies)}
 `;
-for (const [path,value] of [["README.md",readme],["docs/job-list.md",doc]] as const) {
- if (process.argv.includes("--check")) { if (await readFile(path,"utf8") !== value) throw Error(`${path} 与岗位数据不一致，请运行 pnpm catalog:docs`); }
+const oldDoc=`# 企业官网与岗位投递清单
+
+清单已按企业官网展示：[查看完整企业清单](company-list.md)。企业数与岗位数分别统计，投递方式按生产数据的登录要求分类。
+
+岗位检索使用工作台或 \`node dist/local/cli.js jobs --capability auto\` / \`--capability assisted\`。旧版 82＋7 的逐岗证据清单已撤销，不作为支持范围或投递准入条件。
+`;
+for(const [path,value] of [["README.md",readme],["docs/company-list.md",doc],["docs/job-list.md",oldDoc]] as const){
+ if(process.argv.includes("--check")){if(await readFile(path,"utf8")!==value)throw Error(`${path} 与生产数据分类不一致，请运行 pnpm catalog:docs`);}
  else await writeFile(path,value);
 }
-console.log("README 与完整投递清单已同步校验");
+console.log(JSON.stringify({companies:counts,jobs:jobCounts}));
