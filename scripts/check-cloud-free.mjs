@@ -30,6 +30,8 @@ assert(
 const server = await read("src/local/server.ts");
 assert(!server.includes("autoApplyCallbackSecrets:"), "本地运行不配置云端回调");
 assert(!server.includes("database:"), "本地运行不依赖数据库服务");
+assert(server.includes("style-src-elem 'self'; style-src-attr 'unsafe-inline'"),
+  "Ant Design 仅可放行 style 属性，禁止放宽 style 元素来源");
 const webIndex = await read("web/index.html");
 assert(webIndex.includes('href="/dist/antd.css"') && webIndex.includes('href="/dist/app.css"') &&
   webIndex.includes('src="/dist/app.js"'), "本地工作台必须只加载构建后的同源资源");

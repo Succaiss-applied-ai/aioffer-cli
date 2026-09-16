@@ -179,7 +179,7 @@ const finalButton = () => [...document.querySelectorAll("button")].find((element
 
 it("记录不变时保留确认控件，变化后重新显示回读提示", async () => {
   let attempts = [{ id: "test", mode: "assisted", deviceId: "device", versionId: "version", jobIds: ["fixture"], createdAt: "2026-09-16T00:00:00Z", batch: { batchId: "test", status: "paused", jobs: [{
-    batchJobId: "job", jobId: "fixture", companyName: "本机测试", title: "测试岗位", status: "waiting_for_user_action", reasonCode: "final_review_required",
+    batchJobId: "job", jobId: "fixture", companyName: "本机测试", title: "测试岗位", applicationUrl: "https://example.com/application", status: "waiting_for_user_action", reasonCode: "final_review_required",
     evidence: { failureDetails: { reviewHash: "current" } }, localReviewApproval: { reviewHash: "current", expiresAt: "2999-01-01T00:00:00Z" },
   }] } }];
   vi.stubGlobal("fetch", vi.fn(async (path: string) => {
@@ -194,6 +194,10 @@ it("记录不变时保留确认控件，变化后重新显示回读提示", asyn
   await flushReact();
   const first = finalButton();
   expect(first).toBeTruthy();
+  expect((document.querySelector("a[href='https://example.com/application']") as HTMLAnchorElement).textContent).toContain("打开招聘页面");
+  await click(first!);
+  expect(document.body.textContent).toContain("确认最终投递？");
+  await click(button("返回检查"));
   await click(menu("工作台"));
   await click(menu("投递记录"));
   await flushReact();

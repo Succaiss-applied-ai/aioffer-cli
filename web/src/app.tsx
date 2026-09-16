@@ -31,8 +31,10 @@ export function WorkbenchApp() {
     try {
       setStatus(await api<LocalStatus>("/api/status"));
       setStatusError("");
+      return true;
     } catch (error) {
       setStatusError(error instanceof Error ? error.message : "无法连接本地服务");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -105,7 +107,7 @@ export function WorkbenchApp() {
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Tag color={status.model ? "success" : "warning"}>模型{status.model ? "已配置" : "未配置"}</Tag>
             <Tag color={status.mineruConfigured ? "success" : "warning"}>MinerU {status.mineruConfigured ? "已配置" : "未配置"}</Tag>
-            <Button size="small" onClick={() => void loadStatus().then(() => message.success("状态已刷新"))}>刷新</Button>
+            <Button size="small" onClick={() => void loadStatus().then((ok) => ok ? message.success("状态已刷新") : message.error("状态刷新失败，请检查本地服务"))}>刷新</Button>
           </div>
         </Layout.Header>
         <Layout.Content className="min-h-[calc(100vh-64px)] bg-slate-100 p-4 md:p-6">

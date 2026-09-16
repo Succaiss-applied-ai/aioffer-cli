@@ -92,6 +92,7 @@ export interface AutoApplyJob {
   jobId: string;
   companyName: string;
   title: string;
+  applicationUrl?: string;
   status: string;
   reasonCode: string | null;
   progress?: { message: string; stage: string };

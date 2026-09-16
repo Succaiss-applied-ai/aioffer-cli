@@ -42,7 +42,7 @@ function RequiredFieldsForm({ batchId, job, onDone }: { batchId: string; job: Au
     } finally { setLoading(false); }
   };
   return (
-    <Form form={form} layout="vertical" onFinish={(values) => void submit(values)} className="mt-3">
+    <Form form={form} layout="vertical" onFinish={(values) => void submit(values).catch((error) => message.error(error instanceof Error ? error.message : String(error)))} className="mt-3">
       {fields.map((field) => (
         <Form.Item key={field.fieldId} name={field.fieldId} label={field.question || field.label} rules={[{ required: true, message: `请填写${field.label}` }]}>
           {field.options?.length ? (
@@ -131,7 +131,23 @@ export function AttemptsPage({ active, filter, onFilterChange }: Props) {
     okText: "确认停止",
     okButtonProps: { danger: true },
     cancelText: "取消",
-    onOk: () => runAction(`cancel:${batch.batchId}`, `/automation/auto-apply/v1/batches/${batch.batchId}/cancel`),
+    onOk: () => runAction(`cancel:${batch.batchId}`, `/automation/auto-apply/v1/batches/${batch.batchId}/cancel`).catch((error) => {
+      message.error(error instanceof Error ? error.message : String(error));
+      throw error;
+    }),
+  });
+  const confirmFinalSubmit = (batch: AutoApplyBatch, job: AutoApplyJob) => modal.confirm({
+    title: "确认最终投递？",
+    content: finalReviewNotice(job),
+    okText: "已核对，确认提交",
+    cancelText: "返回检查",
+    onOk: () => runAction(`confirm:${job.batchJobId}`, `/api/batches/${batch.batchId}/jobs/${job.batchJobId}/confirm`, {
+      confirmedByUser: true,
+      reviewHash: job.evidence?.failureDetails?.reviewHash,
+    }).catch((error) => {
+      message.error(error instanceof Error ? error.message : String(error));
+      throw error;
+    }),
   });
 
   const visibleAttempts = useMemo(() => [...attempts].reverse().filter((attempt) => {
@@ -150,7 +166,7 @@ export function AttemptsPage({ active, filter, onFilterChange }: Props) {
         { label: "等待处理", value: "waiting" },
         { label: "已结束", value: "finished" },
       ]} />
-      <Button className="ml-2" onClick={() => void refresh().then(() => message.success("记录已刷新"))}>刷新</Button>
+      <Button className="ml-2" onClick={() => void refresh().then(() => message.success("记录已刷新")).catch((error) => message.error(error instanceof Error ? error.message : String(error)))}>刷新</Button>
       <div className="mt-4 space-y-4">
         {visibleAttempts.map((attempt) => {
           const batch = attempt.batch;
@@ -167,10 +183,10 @@ export function AttemptsPage({ active, filter, onFilterChange }: Props) {
                   return (
                     <div key={job.batchJobId} className="rounded-lg border border-slate-200 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-2"><div><Typography.Text strong>{job.companyName} · {job.title}</Typography.Text><div className="mt-1 text-sm text-slate-500">{statusLabels[job.status] || job.status} · {jobMessage(job)}</div></div><Space><StatusTag status={job.status} /><Button size="small" onClick={() => setDrawer({ batch, job })}>任务详情</Button></Space></div>
-                      {job.evidence?.pageUrl && <div className="mt-2"><SafeExternalLink href={job.evidence.pageUrl}>打开招聘页面</SafeExternalLink></div>}
+                      {(job.evidence?.pageUrl || job.applicationUrl) && <div className="mt-2"><SafeExternalLink href={job.evidence?.pageUrl || job.applicationUrl}>打开招聘页面</SafeExternalLink></div>}
                       {attempt.retryableLoginJobIds?.includes(job.jobId) && <RetryAction attempt={attempt} batch={batch} job={job} onDone={refresh} />}
                       {job.status === "waiting_for_user_action" && job.reasonCode === "final_review_required" && (
-                        <Alert className="mt-3" type="warning" showIcon title="提交前需要你核对原招聘页面" description={<><p>{finalReviewNotice(job)}</p><Button type="primary" loading={action === `confirm:${job.batchJobId}`} onClick={() => void runAction(`confirm:${job.batchJobId}`, `/api/batches/${batch.batchId}/jobs/${job.batchJobId}/confirm`, { confirmedByUser: true, reviewHash: job.evidence?.failureDetails?.reviewHash }).catch((error) => message.error(String(error)))}>已核对原页面，确认最终投递</Button></>} />
+                        <Alert className="mt-3" type="warning" showIcon title="提交前需要你核对原招聘页面" description={<><p>{finalReviewNotice(job)}</p><Button type="primary" loading={action === `confirm:${job.batchJobId}`} onClick={() => confirmFinalSubmit(batch, job)}>已核对原页面，确认最终投递</Button></>} />
                       )}
                       {job.status === "waiting_for_user_action" && job.reasonCode === "missing_information" && <RequiredFieldsForm key={`${job.batchJobId}:${job.evidence?.requiredFieldRequests?.map((field) => field.fieldId).join(",")}`} batchId={batch.batchId} job={job} onDone={refresh} />}
                       {job.status === "waiting_for_user_action" && !["final_review_required", "missing_information"].includes(job.reasonCode ?? "") && (
@@ -191,7 +207,7 @@ export function AttemptsPage({ active, filter, onFilterChange }: Props) {
           <StatusTag status={drawer.job.status} />
           <Typography.Paragraph className="!mt-4">{jobMessage(drawer.job) || "暂无更多诊断信息"}</Typography.Paragraph>
           {drawer.job.progress && <Card size="small" title="当前进度">{drawer.job.progress.message}</Card>}
-          {drawer.job.evidence?.pageUrl && <div className="mt-4"><SafeExternalLink href={drawer.job.evidence.pageUrl}>打开第三方招聘页面</SafeExternalLink></div>}
+          {(drawer.job.evidence?.pageUrl || drawer.job.applicationUrl) && <div className="mt-4"><SafeExternalLink href={drawer.job.evidence?.pageUrl || drawer.job.applicationUrl}>打开第三方招聘页面</SafeExternalLink></div>}
         </>}
       </Drawer>
     </div>

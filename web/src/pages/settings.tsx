@@ -20,6 +20,8 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
   const [testing, setTesting] = useState(false);
   const [pairing, setPairing] = useState(false);
   const providerOptions = useMemo(() => Object.entries(status.providers).map(([value, item]) => ({ value, label: item.label })), [status.providers]);
+  const localPluginConnected = devices.some((device) => device.capabilities?.includes("aioffer.local-runtime.v1"));
+  const showError = (error: unknown) => message.error(error instanceof Error ? error.message : String(error));
 
   const loadDevices = async () => setDevices(await api<LocalDevice[]>("/api/devices"));
   useEffect(() => {
@@ -69,7 +71,7 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
   return (
     <div className="grid gap-5 xl:grid-cols-2">
       <Card title="模型与解析服务">
-        <Form form={form} layout="vertical" onFinish={(values) => void save(values)}>
+        <Form form={form} layout="vertical" onFinish={(values) => void save(values).catch(showError)}>
           <Form.Item name="provider" label="模型厂商" rules={[{ required: true }]}>
             <Select options={providerOptions} onChange={(provider) => form.setFieldsValue({ baseUrl: status.providers[provider]?.baseUrl ?? "", apiKey: "" })} />
           </Form.Item>
@@ -79,11 +81,11 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
           <Form.Item name="mineruKey" label="MinerU API Key" extra="已配置时留空可保留原 Key"><Input.Password autoComplete="off" /></Form.Item>
           <Space wrap>
             <Button type="primary" htmlType="submit" loading={saving}>保存配置</Button>
-            <Button onClick={() => void testModel()} loading={testing}>测试视觉模型</Button>
+            <Button onClick={() => void testModel().catch(showError)} loading={testing}>测试视觉模型</Button>
           </Space>
         </Form>
       </Card>
-      <Card title="Chrome 插件" extra={<Tag color={devices.length ? "success" : "warning"}>{devices.length ? "已连接" : "未连接"}</Tag>}>
+      <Card title="Chrome 插件" extra={<Tag color={localPluginConnected ? "success" : "warning"}>{localPluginConnected ? "已连接" : "未连接"}</Tag>}>
         {devices.map((device) => (
           <Card key={device.deviceId} size="small" className="mb-3">
             <Typography.Text strong>{device.deviceName || device.deviceId}</Typography.Text>
@@ -91,8 +93,8 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
           </Card>
         ))}
         <Space wrap>
-          <Button type="primary" onClick={() => void pair()} loading={pairing}>连接本机插件</Button>
-          <Button onClick={() => void loadDevices().then(() => message.success("插件状态已刷新"))}>检查连接</Button>
+          <Button type="primary" onClick={() => void pair().catch(showError)} loading={pairing}>连接本机插件</Button>
+          <Button onClick={() => void loadDevices().then(() => message.success("插件状态已刷新")).catch(showError)}>检查连接</Button>
         </Space>
         <div className="mt-5 rounded-lg bg-slate-50 p-3 text-sm">
           <Typography.Text type="secondary">扩展目录</Typography.Text>
