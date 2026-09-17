@@ -93,7 +93,7 @@ it("修改筛选条件后从第一页搜索", async () => {
   expect(offsets).toEqual([0, 30, 0]);
 });
 
-it("默认能力筛选传给后端且未验证岗位不能选择", async () => {
+it("能力筛选传给后端并重新查询，未验证岗位不能选择", async () => {
   const urls: URL[] = [];
   await boot(async (url) => {
     urls.push(url);
@@ -102,6 +102,9 @@ it("默认能力筛选传给后端且未验证岗位不能选择", async () => {
   expect(urls[0]!.searchParams.get("capability")).toBe("actionable");
   expect((document.querySelector("input[aria-label='选择 未知网页']") as HTMLInputElement).disabled).toBe(true);
   expect(document.body.textContent).toContain("没有能力依据");
+  await selectOption("投递能力", "全部岗位");
+  expect(urls.at(-1)!.searchParams.get("capability")).toBe("all");
+  expect(urls.at(-1)!.searchParams.get("offset")).toBe("0");
 });
 
 const previewJob = { jobId: "job", title: "测试岗位", companyName: "测试", locations: [], salary: "面议", description: "测试", capability: { kind: "auto", label: "自动投递候选", reason: "合成测试能力", allowedModes: ["auto", "assisted"] }, applicationUrl: "https://example.com/job" };

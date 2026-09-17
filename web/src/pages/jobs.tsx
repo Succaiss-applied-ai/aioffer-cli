@@ -43,9 +43,16 @@ export function JobsPage({ active }: { active: boolean }) {
   };
   const invalidatePreview = () => { previewRevision.current += 1; storePreview(null); };
 
-  const search = useCallback(async (requestedOffset = offsetRef.current) => {
+  const search = useCallback(async (
+    requestedOffset = offsetRef.current,
+    override: Partial<{ query: string; city: string; capability: string }> = {},
+  ) => {
     const request = ++searchRequest.current;
-    const current = { query, city, capability };
+    const current = {
+      query: override.query ?? query,
+      city: override.city ?? city,
+      capability: override.capability ?? capability,
+    };
     const displayed = displayedRef.current;
     if (current.query !== displayed.query || current.city !== displayed.city || current.capability !== displayed.capability) requestedOffset = 0;
     searchAbort.current?.abort();
@@ -53,7 +60,7 @@ export function JobsPage({ active }: { active: boolean }) {
     searchAbort.current = controller;
     setSearching(true);
     try {
-      const data = await api<JobsResponse>(`/api/jobs?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}&offset=${requestedOffset}&capability=${encodeURIComponent(capability)}`, undefined, controller.signal);
+      const data = await api<JobsResponse>(`/api/jobs?q=${encodeURIComponent(current.query)}&city=${encodeURIComponent(current.city)}&offset=${requestedOffset}&capability=${encodeURIComponent(current.capability)}`, undefined, controller.signal);
       if (request !== searchRequest.current) return;
       offsetRef.current = requestedOffset;
       displayedRef.current = current;
@@ -136,7 +143,10 @@ export function JobsPage({ active }: { active: boolean }) {
     <>
       <Card>
         <Form layout="inline" onFinish={() => void search(0).catch((error) => message.error(String(error)))}>
-          <Form.Item label="投递能力"><Select aria-label="投递能力" className="w-56" value={capability} onChange={(value) => updateDraft(() => setCapability(value))} options={[
+          <Form.Item label="投递能力"><Select aria-label="投递能力" className="w-56" value={capability} onChange={(value) => {
+            updateDraft(() => setCapability(value));
+            void search(0, { capability: value }).catch((error) => message.error(String(error)));
+          }} options={[
             { value: "actionable", label: "自动 / 半自动投递" }, { value: "auto", label: "自动投递（免登录）" },
             { value: "assisted", label: "半自动投递（需本人登录）" }, { value: "unverified", label: "登录要求未知" },
             { value: "unavailable", label: "暂不可投递" }, { value: "all", label: "全部岗位" },
