@@ -15,6 +15,10 @@ execFileSync(
   [join(root, "node_modules/typescript/bin/tsc"), "-p", "tsconfig.json"],
   { cwd: root, stdio: "inherit" },
 );
+execFileSync(process.execPath, [join(root, "scripts/build-web.mjs")], {
+  cwd: root,
+  stdio: "inherit",
+});
 execFileSync(process.execPath, [join(root, "scripts/build-extension.mjs")], {
   cwd: root,
   stdio: "inherit",
