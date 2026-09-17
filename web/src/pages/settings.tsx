@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { App, Button, Card, Form, Input, Select, Space, Tag, Typography } from "antd";
+import { Alert, App, Button, Card, Form, Input, Select, Space, Tag, Typography } from "antd";
 import { assertLocalPlugin } from "../../plugin-compatibility.js";
 import { api } from "../api.js";
 import { bridge } from "../bridge.js";
@@ -12,6 +12,9 @@ interface Props {
   onStatusChange: (status: LocalStatus) => void;
 }
 
+const pluginGuideUrl = "https://cloud.succaiss.com/plugins/recruiting/";
+const pluginBridgeReady = () => document.documentElement.dataset.recruitingAiBridge === "ready";
+
 export function SettingsPage({ active, status, onStatusChange }: Props) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
@@ -19,8 +22,10 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [pairing, setPairing] = useState(false);
+  const [bridgeReady, setBridgeReady] = useState(pluginBridgeReady);
   const providerOptions = useMemo(() => Object.entries(status.providers).map(([value, item]) => ({ value, label: item.label })), [status.providers]);
   const localPluginConnected = devices.some((device) => device.capabilities?.includes("aioffer.local-runtime.v1"));
+  const pluginStatus = !bridgeReady ? { color: "warning", label: "未检测到" } : localPluginConnected ? { color: "success", label: "已连接" } : { color: "processing", label: "待连接" };
   const showError = (error: unknown) => message.error(error instanceof Error ? error.message : String(error));
 
   const loadDevices = async () => setDevices(await api<LocalDevice[]>("/api/devices"));
@@ -33,7 +38,11 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
       mineruKey: "",
     });
   }, [form, status]);
-  useEffect(() => { if (active) void loadDevices().catch((error) => message.error(String(error))); }, [active]);
+  useEffect(() => {
+    if (!active) return;
+    setBridgeReady(pluginBridgeReady());
+    void loadDevices().catch((error) => message.error(String(error)));
+  }, [active]);
 
   const save = async (values: Record<string, string>) => {
     setSaving(true);
@@ -60,12 +69,31 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
   const pair = async () => {
     setPairing(true);
     try {
+      if (!pluginBridgeReady()) {
+        setBridgeReady(false);
+        window.open(pluginGuideUrl, "_blank", "noopener,noreferrer");
+        message.info("已打开插件安装指引，安装后请刷新本页面");
+        return;
+      }
       assertLocalPlugin(await bridge("RECRUITING_AI_PLUGIN_INFO"));
+      setBridgeReady(true);
       const bootstrap = await api<Record<string, unknown>>("/api/bootstrap", {});
       await bridge("RECRUITING_DEVICE_BOOTSTRAP", bootstrap);
       await loadDevices();
       message.success("已连接本机插件");
     } finally { setPairing(false); }
+  };
+
+  const checkPlugin = async () => {
+    const detected = pluginBridgeReady();
+    setBridgeReady(detected);
+    if (!detected) {
+      message.warning("仍未检测到插件，请完成安装或启用后刷新本页面");
+      return;
+    }
+    assertLocalPlugin(await bridge("RECRUITING_AI_PLUGIN_INFO"));
+    await loadDevices();
+    message.success("插件与本地设备状态已刷新");
   };
 
   return (
@@ -85,7 +113,8 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
           </Space>
         </Form>
       </Card>
-      <Card title="Chrome 插件" extra={<Tag color={localPluginConnected ? "success" : "warning"}>{localPluginConnected ? "已连接" : "未连接"}</Tag>}>
+      <Card className="min-w-0" title="Chrome 插件" extra={<Tag color={pluginStatus.color}>{pluginStatus.label}</Tag>}>
+        {!bridgeReady && <Alert className="mb-4" type="warning" showIcon title="未检测到 Chrome 插件" description="请先安装或启用 aioffer-cli 本地投递助手，安装完成后刷新本页面。" />}
         {devices.map((device) => (
           <Card key={device.deviceId} size="small" className="mb-3">
             <Typography.Text strong>{device.deviceName || device.deviceId}</Typography.Text>
@@ -93,12 +122,14 @@ export function SettingsPage({ active, status, onStatusChange }: Props) {
           </Card>
         ))}
         <Space wrap>
-          <Button type="primary" onClick={() => void pair().catch(showError)} loading={pairing}>连接本机插件</Button>
-          <Button onClick={() => void loadDevices().then(() => message.success("插件状态已刷新")).catch(showError)}>检查连接</Button>
+          {bridgeReady
+            ? <Button type="primary" onClick={() => void pair().catch(showError)} loading={pairing}>连接本机插件</Button>
+            : <Button type="primary" href={pluginGuideUrl} target="_blank" rel="noopener noreferrer">打开安装指引</Button>}
+          <Button onClick={() => void checkPlugin().catch(showError)}>{bridgeReady ? "检查连接" : "重新检测"}</Button>
         </Space>
-        <div className="mt-5 rounded-lg bg-slate-50 p-3 text-sm">
+        <div className="mt-5 min-w-0 rounded-lg bg-slate-50 p-3 text-sm">
           <Typography.Text type="secondary">扩展目录</Typography.Text>
-          <div className="mt-1 break-all">{status.extensionPath}</div>
+          <div className="mt-1 min-w-0 break-all font-mono text-xs leading-5">{status.extensionPath}</div>
           <div className="mt-2"><CopyButton value={status.extensionPath} /></div>
         </div>
       </Card>
